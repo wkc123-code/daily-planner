@@ -130,6 +130,7 @@ function uuid() {
 
 // ==================== 全局状态 ====================
 let selectedDate = todayStr();
+let dateStripCenter = new Date(); // 日期条中心日期（可无限滚动）
 let pendingDelete = null; // { type:'task'|'anni', id }
 
 // ==================== 渲染 ====================
@@ -140,26 +141,29 @@ const $$ = (s) => document.querySelectorAll(s);
 function renderDateStrip() {
   const strip = $('#dateStrip');
   const today = new Date();
+  const todayStrVal = todayStr();
   const dates = [];
+
+  // 以 dateStripCenter 为中心，前后各 3 天
   for (let i = -3; i <= 3; i++) {
-    const d = new Date(today);
+    const d = new Date(dateStripCenter);
     d.setDate(d.getDate() + i);
     dates.push(d);
   }
 
   strip.innerHTML = dates.map(d => {
     const ds = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-    const todayClass = ds === todayStr() ? ' today' : '';
+    const todayClass = ds === todayStrVal ? ' today' : '';
     const activeClass = ds === selectedDate ? ' active' : '';
     const weekdays = ['日','一','二','三','四','五','六'];
-    const label = ds === todayStr() ? '今天' : `周${weekdays[d.getDay()]}`;
+    const label = ds === todayStrVal ? '今天' : `周${weekdays[d.getDay()]}`;
     return `<button class="date-chip${todayClass}${activeClass}" data-date="${ds}">
       <span class="day-label">${label}</span>
       <span class="day-date">${d.getMonth()+1}/${d.getDate()}</span>
     </button>`;
   }).join('');
 
-  // 滚动到今天居中
+  // 滚动到选中日期居中
   const activeChip = strip.querySelector('.active');
   if (activeChip) {
     activeChip.scrollIntoView({ inline: 'center', behavior: 'smooth' });
@@ -173,6 +177,20 @@ function renderDateStrip() {
       loadTasks();
     });
   });
+}
+
+// 日期条左右滚动
+function shiftDate(days) {
+  dateStripCenter.setDate(dateStripCenter.getDate() + days);
+  renderDateStrip();
+}
+
+// 回到今天
+function goToday() {
+  dateStripCenter = new Date();
+  selectedDate = todayStr();
+  renderDateStrip();
+  loadTasks();
 }
 
 // 任务列表
