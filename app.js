@@ -1,11 +1,11 @@
 /* ================================================================
-   每日任务管理 PWA — 全部逻辑
+   每日任务管理 PWA — 2.0  (重复任务 + 分类 + 提醒)
    ================================================================ */
 
-// ==================== 数据库 (IndexedDB) ====================
+// ==================== 数据库 (IndexedDB v2) ====================
 let db;
 const DB_NAME = 'DailyPlannerDB';
-const DB_VER = 1;
+const DB_VER = 2;
 
 function openDB() {
   return new Promise((resolve, reject) => {
@@ -15,6 +15,22 @@ function openDB() {
       if (!d.objectStoreNames.contains('tasks')) {
         const ts = d.createObjectStore('tasks', { keyPath: 'id' });
         ts.createIndex('targetDate', 'targetDate', { unique: false });
+      } else {
+        // v2 升级：给已有 tasks 加新字段
+        const tx = e.target.transaction;
+        const store = tx.objectStore('tasks');
+        store.openCursor().onsuccess = (ev) => {
+          const cursor = ev.target.result;
+          if (!cursor) return;
+          const t = cursor.value;
+          let changed = false;
+          if (t.repeatType === undefined) { t.repeatType = 'none'; changed = true; }
+          if (t.category === undefined) { t.category = '默认'; changed = true; }
+          if (t.reminderTime === undefined) { t.reminderTime = ''; changed = true; }
+          if (t.reminderEnabled === undefined) { t.reminderEnabled = false; changed = true; }
+          if (changed) cursor.update(t);
+          cursor.continue();
+        };
       }
       if (!d.objectStoreNames.contains('anniversaries')) {
         d.createObjectStore('anniversaries', { keyPath: 'id' });
@@ -25,19 +41,88 @@ function openDB() {
   });
 }
 
+// ==================== 分类管理 (localStorage) ====================
+function getCategories() {
+  const raw = localStorage.getItem('categories');
+  if (raw) return JSON.parse(raw);
+  return ['默认', '工作', '日常', '健身'];
+}
+
+function saveCategories(cats) {
+  localStorage.setItem('categories', JSON.stringify(cats));
+}
+
+function addCategory(name) {
+  const cats = getCategories();
+  if (!cats.includes(name)) { cats.push(name); saveCategories(cats); }
+  return cats;
+}
+
+function deleteCategory(name) {
+  if (name === '默认') return getCategories();
+  let cats = getCategories();
+  cats = cats.filter(c => c !== name);
+  saveCategories(cats);
+  // 把该分类下的任务移到"默认"
+  getAllTasksRaw().then(tasks => {
+    tasks.filter(t => t.category === name).forEach(t => {
+      t.category = '默认';
+      saveTask(t);
+    });
+  });
+  return cats;
+}
+
 // ==================== 任务 CRUD ====================
-function getTasks(date) {
+function getAllTasksRaw() {
   return new Promise((resolve) => {
     const tx = db.transaction('tasks', 'readonly');
-    const store = tx.objectStore('tasks');
-    const idx = store.index('targetDate');
-    const req = idx.getAll(date);
-    req.onsuccess = () => {
-      // 优先级高的在前
-      const list = req.result.sort((a, b) => b.priority - a.priority);
-      resolve(list);
-    };
+    tx.objectStore('tasks').getAll().onsuccess = (e) => resolve(e.target.result);
   });
+}
+
+function getTasks(date, category) {
+  return new Promise(async (resolve) => {
+    const all = await getAllTasksRaw();
+    const d = new Date(date + 'T00:00:00');
+    const dayOfWeek = d.getDay();
+    const cat = category || currentCategory;
+
+    const result = all.filter(t => {
+      if (t.category !== cat) return false;
+      const dateMatch = t.targetDate === date;
+      let repeatMatch = false;
+      if (!dateMatch) {
+        repeatMatch = isRepeatMatch(t, date, dayOfWeek);
+      }
+      return dateMatch || repeatMatch;
+    });
+
+    result.forEach(t => {
+      if (t.targetDate !== date && isRepeatMatch(t, date, dayOfWeek)) {
+        t._displayDate = date;
+      } else {
+        t._displayDate = t.targetDate;
+      }
+    });
+
+    result.sort((a, b) => b.priority - a.priority);
+    resolve(result);
+  });
+}
+
+function isRepeatMatch(task, dateStr, dayOfWeek) {
+  if (!task.repeatType || task.repeatType === 'none') return false;
+  if (dateStr < task.targetDate) return false;
+  switch (task.repeatType) {
+    case 'weekdays': return dayOfWeek >= 1 && dayOfWeek <= 5;
+    case 'daily': return true;
+    case 'weekly': {
+      const orig = new Date(task.targetDate + 'T00:00:00');
+      return orig.getDay() === dayOfWeek;
+    }
+    default: return false;
+  }
 }
 
 function saveTask(task) {
@@ -59,6 +144,9 @@ function deleteTask(id) {
 function toggleTaskComplete(task) {
   task.isCompleted = !task.isCompleted;
   task.completedAt = task.isCompleted ? new Date().toISOString() : null;
+  if (task._displayDate && task._displayDate !== task.targetDate) {
+    task.completedDate = task._displayDate;
+  }
   return saveTask(task);
 }
 
@@ -69,7 +157,6 @@ function getAnniversaries() {
     const req = tx.objectStore('anniversaries').getAll();
     req.onsuccess = () => {
       const list = req.result;
-      // 按距今日期排序
       list.sort((a, b) => daysUntil(a) - daysUntil(b));
       resolve(list);
     };
@@ -97,31 +184,25 @@ function todayStr() {
   const d = new Date();
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 }
-
 function pad(n) { return String(n).padStart(2, '0'); }
-
 function formatDateCN(dateStr) {
   const d = new Date(dateStr + 'T00:00:00');
   const w = ['周日','周一','周二','周三','周四','周五','周六'];
   return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日  ${w[d.getDay()]}`;
 }
-
 function daysUntil(a) {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   let next;
   if (a.isAnnual) {
     next = new Date(now.getFullYear(), a.month - 1, a.day);
-    if (next <= today) {
-      next = new Date(now.getFullYear() + 1, a.month - 1, a.day);
-    }
+    if (next <= today) next = new Date(now.getFullYear() + 1, a.month - 1, a.day);
   } else {
     const createdYear = new Date(a.createdAt).getFullYear();
     next = new Date(createdYear, a.month - 1, a.day);
   }
   return Math.floor((next - today) / 86400000);
 }
-
 function uuid() {
   return 'xxxx-xxxx-xxxx'.replace(/x/g, () =>
     Math.floor(Math.random() * 16).toString(16)
@@ -130,27 +211,24 @@ function uuid() {
 
 // ==================== 全局状态 ====================
 let selectedDate = todayStr();
-let dateStripCenter = new Date(); // 日期条中心日期（可无限滚动）
-let pendingDelete = null; // { type:'task'|'anni', id }
+let dateStripCenter = new Date();
+let currentCategory = '默认';
+let pendingDelete = null;
 
-// ==================== 渲染 ====================
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
 
-// 日期选择器
+// ==================== 日期选择器 ====================
 function renderDateStrip() {
   const strip = $('#dateStrip');
   const today = new Date();
   const todayStrVal = todayStr();
   const dates = [];
-
-  // 以 dateStripCenter 为中心，前后各 3 天
   for (let i = -3; i <= 3; i++) {
     const d = new Date(dateStripCenter);
     d.setDate(d.getDate() + i);
     dates.push(d);
   }
-
   strip.innerHTML = dates.map(d => {
     const ds = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
     const todayClass = ds === todayStrVal ? ' today' : '';
@@ -162,14 +240,8 @@ function renderDateStrip() {
       <span class="day-date">${d.getMonth()+1}/${d.getDate()}</span>
     </button>`;
   }).join('');
-
-  // 滚动到选中日期居中
   const activeChip = strip.querySelector('.active');
-  if (activeChip) {
-    activeChip.scrollIntoView({ inline: 'center', behavior: 'smooth' });
-  }
-
-  // 点击事件
+  if (activeChip) activeChip.scrollIntoView({ inline: 'center', behavior: 'smooth' });
   strip.querySelectorAll('.date-chip').forEach(chip => {
     chip.addEventListener('click', () => {
       selectedDate = chip.dataset.date;
@@ -178,34 +250,59 @@ function renderDateStrip() {
     });
   });
 }
+function shiftDate(days) { dateStripCenter.setDate(dateStripCenter.getDate() + days); renderDateStrip(); }
+function goToday() { dateStripCenter = new Date(); selectedDate = todayStr(); renderDateStrip(); loadTasks(); }
 
-// 日期条左右滚动
-function shiftDate(days) {
-  dateStripCenter.setDate(dateStripCenter.getDate() + days);
-  renderDateStrip();
+// ==================== 分类标签栏 ====================
+function renderCategoryBar() {
+  const cats = getCategories();
+  const bar = $('#categoryBar');
+  bar.innerHTML = cats.map(c =>
+    `<button class="cat-chip${c === currentCategory ? ' active' : ''}" data-cat="${escAttr(c)}">${esc(c)}</button>`
+  ).join('') + '<button class="cat-chip cat-add" onclick="openAddCategory()">＋</button>';
+
+  bar.querySelectorAll('.cat-chip').forEach(chip => {
+    if (chip.dataset.cat) {
+      chip.addEventListener('click', () => {
+        currentCategory = chip.dataset.cat;
+        renderCategoryBar();
+        loadTasks();
+      });
+      chip.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        const cat = chip.dataset.cat;
+        if (cat === '默认') return;
+        if (confirm(`删除分类「${cat}」？该分类下的任务将移到「默认」。`)) {
+          deleteCategory(cat);
+          if (currentCategory === cat) currentCategory = '默认';
+          renderCategoryBar();
+          loadTasks();
+        }
+      });
+    }
+  });
 }
 
-// 回到今天
-function goToday() {
-  dateStripCenter = new Date();
-  selectedDate = todayStr();
-  renderDateStrip();
-  loadTasks();
+function openAddCategory() {
+  const name = prompt('输入新分类名称：');
+  if (name && name.trim()) {
+    addCategory(name.trim());
+    renderCategoryBar();
+    loadTasks();
+  }
 }
 
-// 任务列表
+// ==================== 任务列表 ====================
 async function loadTasks() {
   $('#currentDateDisplay').textContent = formatDateCN(selectedDate);
-  const tasks = await getTasks(selectedDate);
+  const tasks = await getTasks(selectedDate, currentCategory);
   const list = $('#taskList');
   const stats = $('#statsBar');
 
   if (tasks.length === 0) {
     list.innerHTML = `<div class="empty-state">
-      <div class="empty-icon">📋</div>
-      <div class="empty-title">暂无任务</div>
-      <div class="empty-sub">点击右下角 ＋ 按钮添加新任务</div>
-    </div>`;
+      <div class="empty-icon">📋</div><div class="empty-title">暂无任务</div>
+      <div class="empty-sub">点击右下角 ＋ 按钮添加新任务</div></div>`;
     stats.style.display = 'none';
   } else {
     const done = tasks.filter(t => t.isCompleted).length;
@@ -217,10 +314,13 @@ async function loadTasks() {
     list.innerHTML = tasks.map(t => {
       const priClass = ['pri-low','pri-mid','pri-high'][t.priority] || 'pri-mid';
       const priLabel = ['低','中','高'][t.priority] || '中';
+      const repeatLabel = t.repeatType === 'weekdays' ? ' 🔁工作日' :
+                         t.repeatType === 'daily' ? ' 🔁每天' :
+                         t.repeatType === 'weekly' ? ' 🔁每周' : '';
       return `<div class="task-item${t.isCompleted?' done':''}" data-id="${t.id}">
         <div class="checkbox" data-toggle="${t.id}">${t.isCompleted ? '✓' : ''}</div>
         <div class="task-info">
-          <div class="task-title">${esc(t.title)}</div>
+          <div class="task-title">${esc(t.title)}${repeatLabel}</div>
           <div class="task-desc">${esc(t.description||'')}</div>
         </div>
         <span class="pri-badge ${priClass}">${priLabel}</span>
@@ -228,35 +328,24 @@ async function loadTasks() {
       </div>`;
     }).join('');
 
-    // 点击复选框
     list.querySelectorAll('.checkbox').forEach(cb => {
       cb.addEventListener('click', async (e) => {
         e.stopPropagation();
         const id = cb.dataset.toggle;
         const task = tasks.find(t => t.id === id);
-        if (task) {
-          await toggleTaskComplete(task);
-          loadTasks();
-        }
+        if (task) { await toggleTaskComplete(task); loadTasks(); }
       });
     });
-
-    // 点击任务编辑
     list.querySelectorAll('.task-item').forEach(item => {
       item.addEventListener('click', (e) => {
         if (e.target.closest('.checkbox') || e.target.closest('.delete-action')) return;
-        const id = item.dataset.id;
-        const task = tasks.find(t => t.id === id);
-        if (task) openTaskEdit(task);
+        const t = tasks.find(x => x.id === item.dataset.id);
+        if (t) openTaskEdit(t);
       });
     });
-
-    // 左滑删除
     list.querySelectorAll('.delete-action').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const id = btn.dataset.delete;
-        pendingDelete = { type: 'task', id };
+        e.stopPropagation(); pendingDelete = { type: 'task', id: btn.dataset.delete };
         $('#confirmMsg').textContent = '确定要删除这个任务吗？';
         $('#confirmDialog').showModal();
       });
@@ -264,17 +353,15 @@ async function loadTasks() {
   }
 }
 
-// 纪念日列表
+function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function escAttr(s) { return esc(s).replace(/"/g,'&quot;'); }
+
+// ==================== 纪念日列表 ====================
 async function loadAnniversaries() {
   const annis = await getAnniversaries();
   const list = $('#anniList');
-
   if (annis.length === 0) {
-    list.innerHTML = `<div class="empty-state">
-      <div class="empty-icon">🎂</div>
-      <div class="empty-title">暂无纪念日</div>
-      <div class="empty-sub">点击右下角 ＋ 按钮添加纪念日</div>
-    </div>`;
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🎂</div><div class="empty-title">暂无纪念日</div><div class="empty-sub">点击右下角 ＋ 按钮添加纪念日</div></div>`;
   } else {
     list.innerHTML = annis.map(a => {
       const days = daysUntil(a);
@@ -283,78 +370,71 @@ async function loadAnniversaries() {
       else if (days > 0) { cls = 'soon'; countCls = 'countdown-soon'; countText = `还有 ${days} 天`; }
       else if (days === 0) { cls = 'today-box'; countCls = 'countdown-today'; countText = '🎉 今天！'; }
       else { cls = 'past'; countCls = 'countdown-past'; countText = `已过 ${-days} 天`; }
-
       return `<div class="anni-item" data-id="${a.id}">
-        <div class="anni-date-box ${cls}">
-          <span class="m">${a.month}月</span>
-          <span class="d">${a.day}</span>
-        </div>
-        <div class="anni-info">
-          <div class="anni-title">${esc(a.title)}</div>
-          <div class="anni-type">${a.isAnnual ? '每年' : '一次性'}</div>
-          ${a.description ? `<div class="anni-desc">${esc(a.description)}</div>` : ''}
-        </div>
-        <span class="anni-countdown ${countCls}">${countText}</span>
-      </div>`;
+        <div class="anni-date-box ${cls}"><span class="m">${a.month}月</span><span class="d">${a.day}</span></div>
+        <div class="anni-info"><div class="anni-title">${esc(a.title)}</div>
+        <div class="anni-type">${a.isAnnual?'每年':'一次性'}</div>${a.description?`<div class="anni-desc">${esc(a.description)}</div>`:''}</div>
+        <span class="anni-countdown ${countCls}">${countText}</span></div>`;
     }).join('');
-
-    // 点击编辑
     list.querySelectorAll('.anni-item').forEach(item => {
       item.addEventListener('click', () => {
-        const a = annis.find(x => x.id === item.dataset.id);
-        if (a) openAnniEdit(a);
+        const a = annis.find(x => x.id === item.dataset.id); if (a) openAnniEdit(a);
       });
-    });
-
-    // 长按删除
-    list.querySelectorAll('.anni-item').forEach(item => {
       item.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        const id = item.dataset.id;
-        pendingDelete = { type: 'anni', id };
-        $('#confirmMsg').textContent = '确定要删除这个纪念日吗？';
-        $('#confirmDialog').showModal();
+        e.preventDefault(); pendingDelete = { type: 'anni', id: item.dataset.id };
+        $('#confirmMsg').textContent = '确定要删除这个纪念日吗？'; $('#confirmDialog').showModal();
       });
     });
   }
 }
 
-function esc(s) {
-  if (!s) return '';
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
-}
-
-// ==================== 弹窗逻辑 ====================
-
-// -- 任务编辑 --
+// ==================== 任务编辑 ====================
 function openTaskEdit(task) {
   $('#taskDialogTitle').textContent = task ? '编辑任务' : '新建任务';
   $('#taskId').value = task ? task.id : '';
   $('#taskTitle').value = task ? task.title : '';
   $('#taskDesc').value = task ? (task.description || '') : '';
-  $('#taskDate').value = task ? task.targetDate : selectedDate;
   $('#taskDatePicker').value = task ? task.targetDate : selectedDate;
+  $('#taskTime').value = task ? (task.reminderTime || '') : '';
+  $('#taskReminder').checked = task ? task.reminderEnabled : false;
 
   const pri = task ? task.priority : 1;
   const priMap = { 2: 'priHigh', 1: 'priMid', 0: 'priLow' };
   const radio = document.getElementById(priMap[pri]);
   if (radio) radio.checked = true;
 
+  const repeat = task ? (task.repeatType || 'none') : 'none';
+  const rMap = { 'none': 'rptNone', 'weekdays': 'rptWeekdays', 'daily': 'rptDaily', 'weekly': 'rptWeekly' };
+  const rRadio = document.getElementById(rMap[repeat]);
+  if (rRadio) rRadio.checked = true;
+
+  const catSel = $('#taskCategory');
+  catSel.innerHTML = getCategories().map(c =>
+    `<option value="${escAttr(c)}"${c === (task ? task.category : currentCategory) ? ' selected' : ''}>${esc(c)}</option>`
+  ).join('');
+
   $('#taskDialog').showModal();
 }
 
-function closeTaskDialog() {
-  $('#taskDialog').close();
+// ==================== 纪念日编辑 ====================
+function fillAnniSelects() {
+  $('#anniMonth').innerHTML = Array.from({length:12},(_,i)=>`<option value="${i+1}">${i+1}月</option>`).join('');
+  $('#anniDay').innerHTML = Array.from({length:31},(_,i)=>`<option value="${i+1}">${i+1}日</option>`).join('');
+}
+function openAnniEdit(anni) {
+  fillAnniSelects();
+  $('#anniDialogTitle').textContent = anni ? '编辑纪念日' : '新建纪念日';
+  $('#anniId').value = anni ? anni.id : '';
+  $('#anniTitle').value = anni ? anni.title : '';
+  $('#anniDesc').value = anni ? (anni.description || '') : '';
+  $('#anniMonth').value = anni ? anni.month : new Date().getMonth()+1;
+  $('#anniDay').value = anni ? anni.day : new Date().getDate();
+  document.querySelector('input[name="isAnnual"][value="'+(anni?(anni.isAnnual?'1':'0'):'1')+'"]').checked = true;
+  $('#reminderDays').value = anni ? anni.reminderDaysBefore : 0;
+  $('#anniDialog').showModal();
 }
 
-// 监听 taskDatePicker 变化，同步到隐藏字段
-$('#taskDatePicker').addEventListener('change', function() {
-  $('#taskDate').value = this.value;
-});
-
-// 任务表单提交
+// ==================== 表单提交 ====================
 $('#taskForm').addEventListener('submit', async function(e) {
   e.preventDefault();
   const id = $('#taskId').value;
@@ -365,13 +445,16 @@ $('#taskForm').addEventListener('submit', async function(e) {
     description: $('#taskDesc').value.trim() || null,
     priority: parseInt(document.querySelector('input[name="priority"]:checked')?.value || '1'),
     targetDate: $('#taskDatePicker').value || selectedDate,
+    category: $('#taskCategory').value || '默认',
+    repeatType: document.querySelector('input[name="repeatType"]:checked')?.value || 'none',
+    reminderTime: $('#taskTime').value || '',
+    reminderEnabled: $('#taskReminder').checked,
     isCompleted: false,
     createdAt: now,
     completedAt: null,
   };
-  // 编辑时保留原状态
   if (id) {
-    const existing = (await getTasks(selectedDate)).find(t => t.id === id);
+    const existing = (await getAllTasksRaw()).find(t => t.id === id);
     if (existing) {
       task.isCompleted = existing.isCompleted;
       task.completedAt = existing.completedAt;
@@ -381,39 +464,15 @@ $('#taskForm').addEventListener('submit', async function(e) {
   await saveTask(task);
   $('#taskDialog').close();
   loadTasks();
+  scheduleReminderCheck();
 });
-
-// -- 纪念日编辑 --
-function fillAnniSelects() {
-  const mSel = $('#anniMonth');
-  mSel.innerHTML = Array.from({length:12}, (_,i) =>
-    `<option value="${i+1}">${i+1}月</option>`).join('');
-  const dSel = $('#anniDay');
-  dSel.innerHTML = Array.from({length:31}, (_,i) =>
-    `<option value="${i+1}">${i+1}日</option>`).join('');
-}
-
-function openAnniEdit(anni) {
-  fillAnniSelects();
-  $('#anniDialogTitle').textContent = anni ? '编辑纪念日' : '新建纪念日';
-  $('#anniId').value = anni ? anni.id : '';
-  $('#anniTitle').value = anni ? anni.title : '';
-  $('#anniDesc').value = anni ? (anni.description || '') : '';
-  $('#anniMonth').value = anni ? anni.month : new Date().getMonth() + 1;
-  $('#anniDay').value = anni ? anni.day : new Date().getDate();
-  document.querySelector('input[name="isAnnual"][value="' + (anni ? (anni.isAnnual ? '1' : '0') : '1') + '"]').checked = true;
-  $('#reminderDays').value = anni ? anni.reminderDaysBefore : 0;
-  $('#anniDialog').showModal();
-}
-
-function closeAnniDialog() {
-  $('#anniDialog').close();
-}
 
 $('#anniForm').addEventListener('submit', async function(e) {
   e.preventDefault();
   const id = $('#anniId').value;
   const now = new Date().toISOString();
+  const allAnnis = await getAnniversaries();
+  const existing = id ? allAnnis.find(a => a.id === id) : null;
   const anni = {
     id: id || uuid(),
     title: $('#anniTitle').value.trim(),
@@ -422,111 +481,97 @@ $('#anniForm').addEventListener('submit', async function(e) {
     day: parseInt($('#anniDay').value),
     isAnnual: document.querySelector('input[name="isAnnual"]:checked')?.value === '1',
     reminderDaysBefore: parseInt($('#reminderDays').value),
-    createdAt: id ? (await findAnniById(id))?.createdAt || now : now,
+    createdAt: existing ? existing.createdAt : now,
   };
   await saveAnniversary(anni);
   $('#anniDialog').close();
   loadAnniversaries();
-  // 重新预约通知
-  scheduleAllNotifications();
 });
-
-async function findAnniById(id) {
-  const all = await getAnniversaries();
-  return all.find(a => a.id === id);
-}
-
-// -- 确认删除 --
-function closeConfirm() {
-  $('#confirmDialog').close();
-  pendingDelete = null;
-}
 
 $('#confirmDialog').addEventListener('submit', async function(e) {
   e.preventDefault();
   if (pendingDelete) {
-    if (pendingDelete.type === 'task') {
-      await deleteTask(pendingDelete.id);
-      loadTasks();
-    } else {
-      await deleteAnniversary(pendingDelete.id);
-      loadAnniversaries();
-    }
+    if (pendingDelete.type === 'task') { await deleteTask(pendingDelete.id); loadTasks(); }
+    else { await deleteAnniversary(pendingDelete.id); loadAnniversaries(); }
   }
-  pendingDelete = null;
-  $('#confirmDialog').close();
+  pendingDelete = null; $('#confirmDialog').close();
+});
+
+function closeTaskDialog() { $('#taskDialog').close(); }
+function closeAnniDialog() { $('#anniDialog').close(); }
+function closeConfirm() { $('#confirmDialog').close(); pendingDelete = null; }
+
+$('#taskDatePicker').addEventListener('change', function() {
+  $('#taskDate').value = this.value;
 });
 
 // ==================== 标签切换 ====================
 function switchTab(tab) {
   if (tab === 'tasks') {
-    $('#homeScreen').style.display = '';
-    $('#anniversaryScreen').style.display = 'none';
-    $$('.nav-btn')[0].classList.add('active');
-    $$('.nav-btn')[1].classList.remove('active');
-    loadTasks();
+    $('#homeScreen').style.display = ''; $('#anniversaryScreen').style.display = 'none';
+    $$('.nav-btn')[0].classList.add('active'); $$('.nav-btn')[1].classList.remove('active'); loadTasks();
   } else {
-    $('#homeScreen').style.display = 'none';
-    $('#anniversaryScreen').style.display = '';
-    $$('.nav-btn')[0].classList.remove('active');
-    $$('.nav-btn')[1].classList.add('active');
-    loadAnniversaries();
+    $('#homeScreen').style.display = 'none'; $('#anniversaryScreen').style.display = '';
+    $$('.nav-btn')[0].classList.remove('active'); $$('.nav-btn')[1].classList.add('active'); loadAnniversaries();
   }
 }
 
-// ==================== 通知 ====================
-function scheduleAllNotifications() {
-  if (!('Notification' in window)) return;
-  Notification.requestPermission().then(perm => {
-    if (perm !== 'granted') return;
-    getAnniversaries().then(annis => {
-      annis.forEach(a => {
-        const days = daysUntil(a);
-        const notifyDays = a.reminderDaysBefore || 0;
-        if (days > notifyDays) {
-          // 用 setTimeout 预约（简化方案）
-          // 实际 PWA 中可以用 Notification API + 定时检查
-          scheduleOne(a, days - notifyDays);
-        }
-      });
+// ==================== 提醒通知 ====================
+let reminderInterval = null;
+
+function scheduleReminderCheck() {
+  if (reminderInterval) clearInterval(reminderInterval);
+  reminderInterval = setInterval(checkReminders, 30000);
+  checkReminders();
+}
+
+async function checkReminders() {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const now = new Date();
+  const nowTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const today = todayStr();
+
+  const all = await getAllTasksRaw();
+  const reminded = JSON.parse(localStorage.getItem('reminded') || '{}');
+
+  all.forEach(t => {
+    if (!t.reminderEnabled || !t.reminderTime || t.isCompleted) return;
+    if (t.reminderTime !== nowTime) return;
+    if (reminded[t.id] === today) return;
+
+    const d = new Date();
+    const dow = d.getDay();
+    if (t.targetDate !== today && !isRepeatMatch(t, today, dow)) return;
+
+    reminded[t.id] = today;
+    localStorage.setItem('reminded', JSON.stringify(reminded));
+
+    new Notification(`⏰ ${t.title}`, {
+      body: `到时间了！${t.description || ''}`,
+      icon: 'icons/icon-192.png',
+      tag: t.id,
     });
   });
 }
 
-function scheduleOne(anni, delayDays) {
-  if (delayDays <= 0 || delayDays > 30) return; // 只预约 30 天内的
-  const ms = delayDays * 86400000;
-  const fireAt = new Date(Date.now() + ms);
-  // 设为早上 8 点
-  fireAt.setHours(8, 0, 0, 0);
-
-  const delay = fireAt.getTime() - Date.now();
-  if (delay <= 0) return;
-
-  setTimeout(() => {
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(`🎂 ${anni.title}`, {
-        body: `今天是${anni.month}月${anni.day}日，别忘了哦！`,
-        icon: '/icons/icon-192.png',
-      });
-    }
-  }, delay);
+function cleanReminded() {
+  const reminded = JSON.parse(localStorage.getItem('reminded') || '{}');
+  const today = todayStr();
+  Object.keys(reminded).forEach(k => { if (reminded[k] !== today) delete reminded[k]; });
+  localStorage.setItem('reminded', JSON.stringify(reminded));
 }
 
 // ==================== 初始化 ====================
 async function init() {
   await openDB();
-
-  // 请求通知权限
   if ('Notification' in window && Notification.permission === 'default') {
     Notification.requestPermission();
   }
-
+  renderCategoryBar();
   renderDateStrip();
   await loadTasks();
-  await scheduleAllNotifications();
-
-  // 注册 Service Worker
+  scheduleReminderCheck();
+  cleanReminded();
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
@@ -534,27 +579,17 @@ async function init() {
 
 init();
 
-// ==================== 移动端左滑删除手势 ====================
-let touchStartX = 0;
-let touchCurrentItem = null;
-
+// ==================== 手势 ====================
+let touchStartX = 0, touchCurrentItem = null;
 document.addEventListener('touchstart', (e) => {
   const item = e.target.closest('.task-item');
   if (!item) return;
-  touchStartX = e.touches[0].clientX;
-  touchCurrentItem = item;
-  // 重置其他项
-  $$('.task-item.swiped').forEach(el => {
-    if (el !== item) el.classList.remove('swiped');
-  });
+  touchStartX = e.touches[0].clientX; touchCurrentItem = item;
+  $$('.task-item.swiped').forEach(el => { if (el !== item) el.classList.remove('swiped'); });
 }, { passive: true });
-
 document.addEventListener('touchmove', (e) => {
   if (!touchCurrentItem) return;
   const dx = touchStartX - e.touches[0].clientX;
-  if (dx > 30) {
-    touchCurrentItem.classList.add('swiped');
-  } else if (dx < -10) {
-    touchCurrentItem.classList.remove('swiped');
-  }
+  if (dx > 30) touchCurrentItem.classList.add('swiped');
+  else if (dx < -10) touchCurrentItem.classList.remove('swiped');
 }, { passive: true });

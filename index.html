@@ -27,6 +27,9 @@
   </div>
   <div class="date-strip" id="dateStrip"></div>
 
+  <!-- 分类标签栏 -->
+  <div class="category-bar" id="categoryBar"></div>
+
   <!-- 统计栏 -->
   <div class="stats" id="statsBar" style="display:none">
     <span class="stat-done">✅ 已完成：<b id="doneCount">0</b> 项</span>
@@ -69,8 +72,32 @@
       <label for="priLow" class="seg-btn">🟢 低</label>
     </div>
 
+    <label>分类</label>
+    <select id="taskCategory"></select>
+
+    <label>重复</label>
+    <div class="segmented">
+      <input type="radio" name="repeatType" id="rptNone" value="none" checked>
+      <label for="rptNone" class="seg-btn">不重复</label>
+      <input type="radio" name="repeatType" id="rptWeekdays" value="weekdays">
+      <label for="rptWeekdays" class="seg-btn">工作日</label>
+      <input type="radio" name="repeatType" id="rptDaily" value="daily">
+      <label for="rptDaily" class="seg-btn">每天</label>
+      <input type="radio" name="repeatType" id="rptWeekly" value="weekly">
+      <label for="rptWeekly" class="seg-btn">每周</label>
+    </div>
+
     <label>日期</label>
     <input type="date" id="taskDatePicker">
+
+    <label>⏰ 定时提醒</label>
+    <div class="reminder-row">
+      <input type="time" id="taskTime" style="flex:1">
+      <label class="toggle-label">
+        <input type="checkbox" id="taskReminder">
+        <span>开启</span>
+      </label>
+    </div>
 
     <div class="dialog-actions">
       <button type="button" class="btn-cancel" onclick="closeTaskDialog()">取消</button>
