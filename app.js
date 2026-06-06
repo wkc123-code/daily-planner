@@ -541,7 +541,6 @@ async function checkReminders() {
 
     const nowMin = now.getHours() * 60 + now.getMinutes();
     if (nowMin < remindMin) continue;
-    if (nowMin - remindMin > 2) continue; // 2 分钟窗口
 
     const dow = now.getDay();
     if (t.targetDate !== today && !isRepeatMatch(t, today, dow)) continue;
