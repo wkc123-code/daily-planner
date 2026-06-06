@@ -45,7 +45,7 @@ function openDB() {
 function getCategories() {
   const raw = localStorage.getItem('categories');
   if (raw) return JSON.parse(raw);
-  return ['默认', '工作', '日常', '健身'];
+  return ['工作', '日常', '健身'];
 }
 
 function saveCategories(cats) {
@@ -59,14 +59,15 @@ function addCategory(name) {
 }
 
 function deleteCategory(name) {
-  if (name === '默认') return getCategories();
   let cats = getCategories();
+  if (cats.length <= 1) { alert('至少保留一个分类'); return cats; }
   cats = cats.filter(c => c !== name);
   saveCategories(cats);
-  // 把该分类下的任务移到"默认"
+  // 把该分类下的任务移到第一个剩余分类
+  const fallback = cats[0];
   getAllTasksRaw().then(tasks => {
     tasks.filter(t => t.category === name).forEach(t => {
-      t.category = '默认';
+      t.category = fallback;
       saveTask(t);
     });
   });
@@ -212,7 +213,7 @@ function uuid() {
 // ==================== 全局状态 ====================
 let selectedDate = todayStr();
 let dateStripCenter = new Date();
-let currentCategory = '默认';
+let currentCategory = getCategories()[0];
 let pendingDelete = null;
 
 const $ = (s) => document.querySelector(s);
@@ -271,8 +272,8 @@ function renderCategoryBar() {
       chip.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         const cat = chip.dataset.cat;
-        if (cat === '默认') return;
-        if (confirm(`删除分类「${cat}」？该分类下的任务将移到「默认」。`)) {
+        if (getCategories().length <= 1) { alert('至少保留一个分类'); return; }
+        if (confirm(`删除分类「${cat}」？该分类下的任务将移到其他分类。`)) {
           deleteCategory(cat);
           if (currentCategory === cat) currentCategory = '默认';
           renderCategoryBar();
@@ -445,7 +446,7 @@ $('#taskForm').addEventListener('submit', async function(e) {
     description: $('#taskDesc').value.trim() || null,
     priority: parseInt(document.querySelector('input[name="priority"]:checked')?.value || '1'),
     targetDate: $('#taskDatePicker').value || selectedDate,
-    category: $('#taskCategory').value || '默认',
+    category: $('#taskCategory').value || currentCategory,
     repeatType: document.querySelector('input[name="repeatType"]:checked')?.value || 'none',
     reminderTime: $('#taskTime').value || '',
     reminderEnabled: $('#taskReminder').checked,
