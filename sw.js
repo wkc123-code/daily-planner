@@ -1,20 +1,8 @@
-// Service Worker — 离线缓存
-const CACHE_NAME = 'daily-planner-v1';
-const ASSETS = [
-  '.',
-  'index.html',
-  'style.css',
-  'app.js',
-  'manifest.json',
-  'icons/icon-192.png',
-  'icons/icon-512.png',
-];
+// Service Worker — 网络优先，离线回退
+const CACHE_NAME = 'daily-planner-v2';
 
-// 安装：缓存所有资源
+// 安装
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
-  );
   self.skipWaiting();
 });
 
@@ -28,9 +16,19 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// 请求：缓存优先
+// 请求：网络优先，失败时用缓存
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
+    fetch(event.request)
+      .then((response) => {
+        // 网络成功，更新缓存
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        return response;
+      })
+      .catch(() => {
+        // 离线时用缓存
+        return caches.match(event.request);
+      })
   );
 });
