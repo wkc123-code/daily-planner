@@ -614,9 +614,28 @@ function cleanReminded() {
 // ==================== 初始化 ====================
 async function init() {
   await openDB();
-  if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
+
+  // 检查通知权限
+  if ('Notification' in window) {
+    if (Notification.permission === 'default') {
+      // 首次询问
+      const perm = await Notification.requestPermission();
+      if (perm === 'granted') {
+        // 发一条测试通知确认能弹
+        new Notification('✅ 提醒功能已开启', {
+          body: '任务到时间时会提前弹窗通知你',
+          icon: 'icons/icon-192.png',
+        });
+      } else {
+        alert('⚠️ 你拒绝了通知权限，提醒功能将无法使用。\n\n如需开启：请到手机 设置 → 通知 → 浏览器 → 允许通知');
+      }
+    } else if (Notification.permission === 'denied') {
+      alert('⚠️ 通知权限已被拒绝。\n\n如需开启：请到手机 设置 → 通知 → 浏览器/Chrome → 允许通知');
+    }
+  } else {
+    alert('⚠️ 你的浏览器不支持通知功能');
   }
+
   renderCategoryBar();
   renderDateStrip();
   await loadTasks();
