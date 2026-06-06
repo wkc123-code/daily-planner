@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1976d2">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="每日任务">
+  <title>每日任务</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ==================== 主屏幕 ==================== -->
+<main id="homeScreen">
+  <header>
+    <h1>每日任务管理</h1>
+    <p id="currentDateDisplay"></p>
+  </header>
+
+  <!-- 日期选择器 -->
+  <div class="date-strip" id="dateStrip"></div>
+
+  <!-- 统计栏 -->
+  <div class="stats" id="statsBar" style="display:none">
+    <span class="stat-done">✅ 已完成：<b id="doneCount">0</b> 项</span>
+    <span class="stat-todo">📋 未完成：<b id="todoCount">0</b> 项</span>
+  </div>
+
+  <!-- 任务列表 -->
+  <div class="task-list" id="taskList"></div>
+
+  <!-- 底部导航 -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" onclick="switchTab('tasks')">📋 任务</button>
+    <button class="nav-btn" onclick="switchTab('anniversaries')">🎂 纪念日</button>
+  </nav>
+
+  <!-- 新建按钮 -->
+  <button class="fab" onclick="openTaskEdit()">＋</button>
+</main>
+
+<!-- ==================== 任务编辑弹窗 ==================== -->
+<dialog id="taskDialog">
+  <form id="taskForm" method="dialog">
+    <h2 id="taskDialogTitle">新建任务</h2>
+    <input type="hidden" id="taskId">
+    <input type="hidden" id="taskDate">
+
+    <label>任务名称</label>
+    <input type="text" id="taskTitle" placeholder="输入任务名称" required autocomplete="off">
+
+    <label>详细描述（可选）</label>
+    <textarea id="taskDesc" rows="2" placeholder="备注..."></textarea>
+
+    <label>优先级</label>
+    <div class="segmented">
+      <input type="radio" name="priority" id="priHigh" value="2">
+      <label for="priHigh" class="seg-btn">🔴 高</label>
+      <input type="radio" name="priority" id="priMid" value="1" checked>
+      <label for="priMid" class="seg-btn">🟠 中</label>
+      <input type="radio" name="priority" id="priLow" value="0">
+      <label for="priLow" class="seg-btn">🟢 低</label>
+    </div>
+
+    <label>日期</label>
+    <input type="date" id="taskDatePicker">
+
+    <div class="dialog-actions">
+      <button type="button" class="btn-cancel" onclick="closeTaskDialog()">取消</button>
+      <button type="submit" class="btn-save">保存</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ==================== 纪念日屏幕 ==================== -->
+<main id="anniversaryScreen" style="display:none">
+  <header>
+    <h1>纪念日</h1>
+  </header>
+
+  <div class="anni-list" id="anniList"></div>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn" onclick="switchTab('tasks')">📋 任务</button>
+    <button class="nav-btn active" onclick="switchTab('anniversaries')">🎂 纪念日</button>
+  </nav>
+
+  <button class="fab" onclick="openAnniEdit()">＋</button>
+</main>
+
+<!-- ==================== 纪念日编辑弹窗 ==================== -->
+<dialog id="anniDialog">
+  <form id="anniForm" method="dialog">
+    <h2 id="anniDialogTitle">新建纪念日</h2>
+    <input type="hidden" id="anniId">
+
+    <label>事件名称</label>
+    <input type="text" id="anniTitle" placeholder="如：结婚纪念日" required autocomplete="off">
+
+    <label>日期</label>
+    <div class="month-day">
+      <select id="anniMonth"></select>
+      <select id="anniDay"></select>
+    </div>
+
+    <label>重复</label>
+    <div class="segmented">
+      <input type="radio" name="isAnnual" id="annualYes" value="1" checked>
+      <label for="annualYes" class="seg-btn">每年</label>
+      <input type="radio" name="isAnnual" id="annualNo" value="0">
+      <label for="annualNo" class="seg-btn">一次性</label>
+    </div>
+
+    <label>提醒</label>
+    <select id="reminderDays">
+      <option value="0">当天提醒</option>
+      <option value="1">提前 1 天</option>
+      <option value="3">提前 3 天</option>
+      <option value="7">提前 7 天</option>
+    </select>
+
+    <label>备注（可选）</label>
+    <input type="text" id="anniDesc" placeholder="备注..." autocomplete="off">
+
+    <div class="dialog-actions">
+      <button type="button" class="btn-cancel" onclick="closeAnniDialog()">取消</button>
+      <button type="submit" class="btn-save">保存</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ==================== 确认删除弹窗 ==================== -->
+<dialog id="confirmDialog">
+  <form method="dialog">
+    <p id="confirmMsg">确定要删除吗？</p>
+    <div class="dialog-actions">
+      <button type="button" class="btn-cancel" onclick="closeConfirm()">取消</button>
+      <button type="submit" class="btn-delete" id="confirmDeleteBtn">删除</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>
