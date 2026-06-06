@@ -362,9 +362,12 @@ function dbg(msg) {
   if (el) { const n = new Date(); el.textContent = '['+pad(n.getHours())+':'+pad(n.getMinutes())+':'+pad(n.getSeconds())+'] '+msg; }
 }
 
+function hasNotifyCapability() {
+  return (typeof AndroidReminder !== 'undefined') || ('Notification' in window && Notification.permission === 'granted');
+}
+
 async function checkReminders() {
-  if (!('Notification' in window)) { dbg('❌ 浏览器不支持 Notification'); return; }
-  if (Notification.permission !== 'granted') { dbg('❌ 权限未授予: '+Notification.permission); return; }
+  if (!hasNotifyCapability()) { dbg('❌ 无通知能力(Android桥接:'+(typeof AndroidReminder!=='undefined')+' 浏览器:'+('Notification' in window)+'/'+(('Notification' in window)?Notification.permission:'-')+')'); return; }
 
   const now = new Date();
   const today = todayStr();
@@ -398,7 +401,7 @@ async function checkReminders() {
 }
 
 async function checkMissedReminders() {
-  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  if (!hasNotifyCapability()) return;
   const now = new Date(), today = todayStr();
   const all = await getAllTasksRaw();
   const reminded = JSON.parse(localStorage.getItem('reminded') || '{}');
@@ -436,10 +439,11 @@ function cleanReminded() {
 async function init() {
   await openDB();
 
-  // 检查通知权限
-  if ('Notification' in window) {
+  // 检查通知权限（APK中跳过，用原生桥接）
+  if (typeof AndroidReminder !== 'undefined') {
+    dbg('✅ Android原生通知就绪');
+  } else if ('Notification' in window) {
     if (Notification.permission !== 'granted') {
-      // 显示权限提示条
       $('#permBar').style.display = '';
       $('#permBtn').addEventListener('click', async () => {
         const perm = await Notification.requestPermission();
@@ -452,8 +456,6 @@ async function init() {
         }
       });
     }
-  } else {
-    dbg('❌ 浏览器不支持通知');
   }
 
   renderCategoryBar();
