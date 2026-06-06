@@ -518,41 +518,95 @@ function switchTab(tab) {
 }
 
 // ==================== 提醒通知 ====================
-let reminderInterval = null;
-
-function scheduleReminderCheck() {
-  if (reminderInterval) clearInterval(reminderInterval);
-  reminderInterval = setInterval(checkReminders, 30000);
-  checkReminders();
-}
+let lastCheckTime = Date.now();
 
 async function checkReminders() {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   const now = new Date();
-  const nowTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
   const today = todayStr();
-
   const all = await getAllTasksRaw();
   const reminded = JSON.parse(localStorage.getItem('reminded') || '{}');
 
-  all.forEach(t => {
-    if (!t.reminderEnabled || !t.reminderTime || t.isCompleted) return;
-    if (t.reminderTime !== nowTime) return;
-    if (reminded[t.id] === today) return;
+  // 按时间排序
+  const withReminder = all.filter(t => t.reminderEnabled && t.reminderTime && !t.isCompleted);
 
-    const d = new Date();
-    const dow = d.getDay();
-    if (t.targetDate !== today && !isRepeatMatch(t, today, dow)) return;
+  for (const t of withReminder) {
+    if (reminded[t.id] === today) continue;
+
+    const [th, tm] = t.reminderTime.split(':').map(Number);
+    const nh = now.getHours(), nm = now.getMinutes();
+
+    // 匹配：当前时间 >= 提醒时间（容忍 2 分钟内）
+    const remindMinutes = th * 60 + tm;
+    const nowMinutes = nh * 60 + nm;
+
+    if (nowMinutes < remindMinutes) continue; // 还没到
+    if (nowMinutes - remindMinutes > 2) continue; // 超过 2 分钟不管
+
+    // 日期匹配
+    const dow = now.getDay();
+    if (t.targetDate !== today && !isRepeatMatch(t, today, dow)) continue;
 
     reminded[t.id] = today;
     localStorage.setItem('reminded', JSON.stringify(reminded));
 
     new Notification(`⏰ ${t.title}`, {
-      body: `到时间了！${t.description || ''}`,
+      body: t.description || '到时间了！',
       icon: 'icons/icon-192.png',
       tag: t.id,
+      requireInteraction: true,
     });
-  });
+  }
+
+  lastCheckTime = Date.now();
+}
+
+// 检查遗漏的提醒（App 被息屏暂停后回到前台时触发）
+async function checkMissedReminders() {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const now = new Date();
+  const today = todayStr();
+  const all = await getAllTasksRaw();
+  const reminded = JSON.parse(localStorage.getItem('reminded') || '{}');
+
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+  for (const t of all) {
+    if (!t.reminderEnabled || !t.reminderTime || t.isCompleted) continue;
+    if (reminded[t.id] === today) continue;
+
+    const [th, tm] = t.reminderTime.split(':').map(Number);
+    const remindMinutes = th * 60 + tm;
+
+    // 已过了提醒时间
+    if (nowMinutes < remindMinutes) continue;
+
+    const dow = now.getDay();
+    if (t.targetDate !== today && !isRepeatMatch(t, today, dow)) continue;
+
+    reminded[t.id] = today;
+    localStorage.setItem('reminded', JSON.stringify(reminded));
+
+    new Notification(`⏰ ${t.title}`, {
+      body: `提醒时间：${t.reminderTime}${t.description ? ' — ' + t.description : ''}`,
+      icon: 'icons/icon-192.png',
+      tag: t.id,
+      requireInteraction: true,
+    });
+  }
+}
+
+// 监听回到前台
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    checkMissedReminders();
+    lastCheckTime = Date.now();
+  }
+});
+
+function scheduleReminderCheck() {
+  setInterval(checkReminders, 30000);
+  checkReminders();
 }
 
 function cleanReminded() {
