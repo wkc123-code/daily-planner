@@ -424,16 +424,27 @@ function cleanReminded() {
 // ==================== 初始化 ====================
 async function init() {
   await openDB();
-  if ('Notification' in window && Notification.permission === 'default') {
-    const perm = await Notification.requestPermission();
-    if (perm === 'granted') {
-      new Notification('✅ 提醒功能已开启', { body: '任务到时间时会提前弹窗通知你', icon: 'icons/icon-192.png', });
-    } else {
-      alert('⚠️ 你拒绝了通知权限，提醒功能将无法使用。\n\n如需开启：手机 设置 → 通知 → Edge → 允许通知');
+
+  // 检查通知权限
+  if ('Notification' in window) {
+    if (Notification.permission !== 'granted') {
+      // 显示权限提示条
+      $('#permBar').style.display = '';
+      $('#permBtn').addEventListener('click', async () => {
+        const perm = await Notification.requestPermission();
+        if (perm === 'granted') {
+          $('#permBar').style.display = 'none';
+          new Notification('✅ 提醒功能已开启', { body: '任务到时间时会提前弹窗通知你', icon: 'icons/icon-192.png' });
+          scheduleReminderCheck();
+        } else {
+          alert('请在手机 设置 → 通知 → Edge → 允许通知');
+        }
+      });
     }
-  } else if ('Notification' in window && Notification.permission === 'denied') {
-    alert('⚠️ 通知权限已被拒绝。\n\n手机 设置 → 通知 → Edge → 允许通知');
+  } else {
+    dbg('❌ 浏览器不支持通知');
   }
+
   renderCategoryBar();
   renderDateStrip();
   await loadTasks();
