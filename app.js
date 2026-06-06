@@ -2,6 +2,18 @@
    每日任务管理 PWA — 2.0  (重复任务 + 分类 + 提醒)
    ================================================================ */
 
+// ==================== 原生通知桥接 ====================
+function sendNotification(title, body) {
+  // 优先使用 Android 原生通知
+  if (typeof AndroidReminder !== 'undefined' && AndroidReminder.showNotification) {
+    try { AndroidReminder.showNotification(title, body); return; } catch(e) {}
+  }
+  // 回退到浏览器 Notification
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification(title, { body: body, icon: 'icons/icon-192.png', tag: 'reminder', requireInteraction: true });
+  }
+}
+
 // ==================== 数据库 (IndexedDB v2) ====================
 let db;
 const DB_NAME = 'DailyPlannerDB';
@@ -377,12 +389,7 @@ async function checkReminders() {
     localStorage.setItem('reminded', JSON.stringify(reminded));
 
     dbg('🔔 弹窗: '+t.title);
-    new Notification('⏰ ' + t.title, {
-      body: '还有 ' + offset + ' 分钟！(' + t.reminderTime + ')',
-      icon: 'icons/icon-192.png',
-      tag: t.id,
-      requireInteraction: true,
-    });
+    sendNotification('⏰ ' + t.title, '还有 ' + offset + ' 分钟！(' + t.reminderTime + ')');
   }
 }
 
@@ -407,7 +414,7 @@ async function checkMissedReminders() {
     reminded[t.id] = today;
     localStorage.setItem('reminded', JSON.stringify(reminded));
     dbg('补推: '+t.title);
-    new Notification('⏰ ' + t.title, { body: '提醒时间：' + t.reminderTime + '（提前 ' + offset + ' 分钟）', icon: 'icons/icon-192.png', tag: t.id, requireInteraction: true, });
+    sendNotification('⏰ ' + t.title, '提醒时间：' + t.reminderTime + '（提前 ' + offset + ' 分钟）');
   }
 }
 
@@ -434,7 +441,7 @@ async function init() {
         const perm = await Notification.requestPermission();
         if (perm === 'granted') {
           $('#permBar').style.display = 'none';
-          new Notification('✅ 提醒功能已开启', { body: '任务到时间时会提前弹窗通知你', icon: 'icons/icon-192.png' });
+          sendNotification('✅ 提醒功能已开启', '任务到时间时会提前弹窗通知你');
           scheduleReminderCheck();
         } else {
           alert('请在手机 设置 → 通知 → Edge → 允许通知');
