@@ -4,13 +4,17 @@
 
 // ==================== 原生通知桥接 ====================
 function sendNotification(title, body) {
-  // 优先使用 Android 原生通知
+  dbg('发送通知: '+title);
   if (typeof AndroidReminder !== 'undefined' && AndroidReminder.showNotification) {
-    try { AndroidReminder.showNotification(title, body); return; } catch(e) {}
+    try { AndroidReminder.showNotification(title, body); dbg('✅ Android原生通知已发送'); return; } catch(e) { dbg('Android桥接失败: '+e); }
+  } else {
+    dbg('AndroidReminder不可用, 回退浏览器');
   }
-  // 回退到浏览器 Notification
   if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification(title, { body: body, icon: 'icons/icon-192.png', tag: 'reminder', requireInteraction: true });
+    new Notification(title, { body: body, icon: 'icons/icon-192.png', tag: 'reminder' });
+    dbg('✅ 浏览器通知已发送');
+  } else {
+    dbg('浏览器通知也不可用: '+(typeof Notification)+' perm='+(('Notification' in window)?Notification.permission:'N/A'));
   }
 }
 
