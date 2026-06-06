@@ -92,7 +92,13 @@
 
     <label>⏰ 定时提醒</label>
     <div class="reminder-row">
-      <input type="time" id="taskTime" style="flex:1">
+      <select id="reminderOffset" style="flex:1">
+        <option value="5">提前 5 分钟</option>
+        <option value="10">提前 10 分钟</option>
+        <option value="15">提前 15 分钟</option>
+        <option value="30">提前 30 分钟</option>
+      </select>
+      <input type="time" id="taskTime" style="flex:2">
       <label class="toggle-label">
         <input type="checkbox" id="taskReminder">
         <span>开启</span>

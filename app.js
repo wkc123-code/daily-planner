@@ -28,6 +28,7 @@ function openDB() {
           if (t.category === undefined) { t.category = '默认'; changed = true; }
           if (t.reminderTime === undefined) { t.reminderTime = ''; changed = true; }
           if (t.reminderEnabled === undefined) { t.reminderEnabled = false; changed = true; }
+          if (t.reminderOffset === undefined) { t.reminderOffset = 5; changed = true; }
           if (changed) cursor.update(t);
           cursor.continue();
         };
@@ -398,6 +399,7 @@ function openTaskEdit(task) {
   $('#taskDatePicker').value = task ? task.targetDate : selectedDate;
   $('#taskTime').value = task ? (task.reminderTime || '') : '';
   $('#taskReminder').checked = task ? task.reminderEnabled : false;
+  $('#reminderOffset').value = task ? (task.reminderOffset || 5) : 5;
 
   const pri = task ? task.priority : 1;
   const priMap = { 2: 'priHigh', 1: 'priMid', 0: 'priLow' };
@@ -450,6 +452,7 @@ $('#taskForm').addEventListener('submit', async function(e) {
     repeatType: document.querySelector('input[name="repeatType"]:checked')?.value || 'none',
     reminderTime: $('#taskTime').value || '',
     reminderEnabled: $('#taskReminder').checked,
+    reminderOffset: parseInt($('#reminderOffset').value) || 5,
     isCompleted: false,
     createdAt: now,
     completedAt: null,
@@ -518,8 +521,6 @@ function switchTab(tab) {
 }
 
 // ==================== 提醒通知 ====================
-let lastCheckTime = Date.now();
-
 async function checkReminders() {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   const now = new Date();
@@ -527,23 +528,21 @@ async function checkReminders() {
   const all = await getAllTasksRaw();
   const reminded = JSON.parse(localStorage.getItem('reminded') || '{}');
 
-  // 按时间排序
   const withReminder = all.filter(t => t.reminderEnabled && t.reminderTime && !t.isCompleted);
 
   for (const t of withReminder) {
     if (reminded[t.id] === today) continue;
 
     const [th, tm] = t.reminderTime.split(':').map(Number);
-    const nh = now.getHours(), nm = now.getMinutes();
+    const offset = t.reminderOffset || 5;
+    // 弹窗时间 = 任务时间 - 提前量
+    let remindMin = th * 60 + tm - offset;
+    if (remindMin < 0) remindMin += 24 * 60; // 跨天
 
-    // 匹配：当前时间 >= 提醒时间（容忍 2 分钟内）
-    const remindMinutes = th * 60 + tm;
-    const nowMinutes = nh * 60 + nm;
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    if (nowMin < remindMin) continue;
+    if (nowMin - remindMin > 2) continue; // 2 分钟窗口
 
-    if (nowMinutes < remindMinutes) continue; // 还没到
-    if (nowMinutes - remindMinutes > 2) continue; // 超过 2 分钟不管
-
-    // 日期匹配
     const dow = now.getDay();
     if (t.targetDate !== today && !isRepeatMatch(t, today, dow)) continue;
 
@@ -551,35 +550,32 @@ async function checkReminders() {
     localStorage.setItem('reminded', JSON.stringify(reminded));
 
     new Notification(`⏰ ${t.title}`, {
-      body: t.description || '到时间了！',
+      body: `还有 ${offset} 分钟！(${t.reminderTime})`,
       icon: 'icons/icon-192.png',
       tag: t.id,
       requireInteraction: true,
     });
   }
-
-  lastCheckTime = Date.now();
 }
 
-// 检查遗漏的提醒（App 被息屏暂停后回到前台时触发）
 async function checkMissedReminders() {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   const now = new Date();
   const today = todayStr();
   const all = await getAllTasksRaw();
   const reminded = JSON.parse(localStorage.getItem('reminded') || '{}');
-
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
 
   for (const t of all) {
     if (!t.reminderEnabled || !t.reminderTime || t.isCompleted) continue;
     if (reminded[t.id] === today) continue;
 
     const [th, tm] = t.reminderTime.split(':').map(Number);
-    const remindMinutes = th * 60 + tm;
+    const offset = t.reminderOffset || 5;
+    let remindMin = th * 60 + tm - offset;
+    if (remindMin < 0) remindMin += 24 * 60;
 
-    // 已过了提醒时间
-    if (nowMinutes < remindMinutes) continue;
+    if (nowMin < remindMin) continue;
 
     const dow = now.getDay();
     if (t.targetDate !== today && !isRepeatMatch(t, today, dow)) continue;
@@ -588,7 +584,7 @@ async function checkMissedReminders() {
     localStorage.setItem('reminded', JSON.stringify(reminded));
 
     new Notification(`⏰ ${t.title}`, {
-      body: `提醒时间：${t.reminderTime}${t.description ? ' — ' + t.description : ''}`,
+      body: `提醒时间到了：${t.reminderTime}（提前 ${offset} 分钟）`,
       icon: 'icons/icon-192.png',
       tag: t.id,
       requireInteraction: true,
