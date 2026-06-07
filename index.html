@@ -28,17 +28,17 @@
     <button class="date-arrow" onclick="shiftDate(5)">▶</button>
   </div>
 
-  <!-- 分类标签栏 -->
-  <div class="category-bar" id="categoryBar"></div>
-
   <!-- 统计栏 -->
   <div class="stats" id="statsBar" style="display:none">
-    <span class="stat-done">✅ 已完成：<b id="doneCount">0</b> 项</span>
-    <span class="stat-todo">📋 未完成：<b id="todoCount">0</b> 项</span>
+    <span class="stat-done">✅ <b id="doneCount">0</b></span>
+    <span class="stat-todo">📋 <b id="todoCount">0</b></span>
   </div>
 
-  <!-- 任务列表 -->
-  <div class="task-list" id="taskList"></div>
+  <!-- 侧边栏 + 任务区 -->
+  <div class="main-layout">
+    <aside class="sidebar" id="categoryBar"></aside>
+    <div class="task-area" id="taskList"></div>
+  </div>
 
   <!-- 底部导航 -->
   <nav class="bottom-nav">

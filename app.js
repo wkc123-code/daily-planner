@@ -220,7 +220,8 @@ function goToday() { dateStripCenter=new Date(); selectedDate=todayStr(); render
 function renderCategoryBar() {
   const cats = getCategories();
   const bar = $('#categoryBar');
-  bar.innerHTML = cats.map(c => '<button class="cat-chip'+(c===currentCategory?' active':'')+'" data-cat="'+escAttr(c)+'">'+esc(c)+'</button>').join('') + '<button class="cat-chip cat-add" onclick="openAddCategory()">＋</button>';
+  bar.innerHTML = cats.map(c => '<button class="cat-chip'+(c===currentCategory?' active':'')+'" data-cat="'+escAttr(c)+'">'+esc(c)+'</button>').join('')
+    + '<button class="cat-chip cat-add" onclick="openAddCategory()">＋</button>';
   bar.querySelectorAll('.cat-chip').forEach(chip => {
     if (chip.dataset.cat) {
       chip.addEventListener('click',()=>{ currentCategory=chip.dataset.cat; renderCategoryBar(); loadTasks(); });
@@ -237,7 +238,7 @@ async function loadTasks() {
   const list = $('#taskList');
   const stats = $('#statsBar');
   if (tasks.length === 0) {
-    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">暂无任务</div><div class="empty-sub">点击右下角 ＋ 按钮添加新任务</div></div>';
+    list.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">📋</div><div class="empty-title">暂无任务</div><div class="empty-sub">点击 ＋ 添加新任务</div></div>';
     stats.style.display = 'none';
   } else {
     const done = tasks.filter(t=>t.isCompleted).length;

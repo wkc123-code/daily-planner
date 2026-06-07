@@ -81,38 +81,55 @@ header p { font-size: 13px; opacity: 0.9; }
 .date-chip.active { background: var(--blue); color: #fff; }
 .date-chip.active.today { border-color: var(--blue); }
 
-/* ========== 分类标签栏 ========== */
-.category-bar {
+/* ========== 主布局：侧边栏 + 任务区 ========== */
+.main-layout {
   display: flex;
-  overflow-x: auto;
-  gap: 8px;
-  padding: 10px 16px;
-  background: #fff;
-  border-bottom: 1px solid #e0e0e0;
+  flex: 1;
+  min-height: 0;
+  background: var(--bg);
 }
-.category-bar::-webkit-scrollbar { display: none; }
-.cat-chip {
-  flex: 0 0 auto;
-  padding: 7px 16px;
-  border-radius: 20px;
-  border: 1px solid #e0e0e0;
+.sidebar {
+  width: 80px; min-width: 80px;
   background: #fff;
+  border-right: 1px solid #E8E8E8;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+}
+.cat-chip {
+  padding: 12px 6px;
+  margin: 2px 8px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
   font-size: 13px;
   cursor: pointer;
   color: #666;
-  white-space: nowrap;
-  transition: all 0.2s;
+  text-align: center;
+  transition: all 0.15s;
 }
 .cat-chip.active {
   background: var(--blue);
   color: #fff;
-  border-color: var(--blue);
+  font-weight: 600;
 }
 .cat-chip.cat-add {
-  border-style: dashed;
-  font-weight: 700;
-  font-size: 16px;
-  padding: 7px 12px;
+  border: 1px dashed #ccc;
+  padding: 8px 4px;
+  font-size: 18px;
+  color: #aaa;
+  margin-top: auto;
+}
+
+/* ========== 任务区网格 ========== */
+.task-area {
+  flex: 1;
+  padding: 8px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  align-content: start;
 }
 
 /* ========== 提醒行 ========== */
@@ -143,31 +160,29 @@ header p { font-size: 13px; opacity: 0.9; }
 .stat-done b { color: var(--green); }
 .stat-todo b { color: var(--orange); }
 
-/* ========== 任务列表 ========== */
-.task-list, .anni-list {
-  padding: 8px 12px 120px;
-  min-height: 200px;
-}
+/* ========== 任务卡片 ========== */
+.ani-list { padding: 8px 12px 120px; min-height: 200px; }
 .task-item {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 6px;
   background: var(--card);
   border-radius: var(--radius);
-  padding: 12px 14px;
-  margin: 6px 0;
+  padding: 12px;
   box-shadow: var(--shadow);
   transition: transform 0.15s;
+  position: relative;
 }
-.task-item:active { transform: scale(0.98); }
+.task-item:active { transform: scale(0.97); }
 .task-item .checkbox {
-  width: 22px; height: 22px;
-  border: 2px solid #bdbdbd;
-  border-radius: 6px;
+  position: absolute; top: 8px; right: 8px;
+  width: 20px; height: 20px;
+  border: 2px solid #B0B0B0;
+  border-radius: 50%;
   flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 12px;
   color: transparent;
   transition: all 0.2s;
 }
@@ -176,31 +191,26 @@ header p { font-size: 13px; opacity: 0.9; }
   border-color: var(--green);
   color: #fff;
 }
-.task-item .task-info { flex:1; min-width:0; }
+.task-item .task-info { flex:1; min-width:0; padding-right: 24px; }
 .task-item .task-title {
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
   word-break: break-all;
+  line-height: 1.3;
 }
 .task-item.done .task-title {
   text-decoration: line-through;
   color: #999;
 }
 .task-item .task-desc {
-  font-size: 12px;
-  color: #999;
-  margin-top: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 11px; color: #999; margin-top: 4px;
 }
 .task-item .task-desc:empty { display: none; }
 .task-item .pri-badge {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 3px 10px;
-  border-radius: 12px;
-  flex-shrink: 0;
+  font-size: 10px; font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  align-self: flex-start;
 }
 .pri-high { background: #ffebee; color: var(--red); }
 .pri-mid  { background: #fff3e0; color: var(--orange); }
