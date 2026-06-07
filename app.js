@@ -233,21 +233,102 @@ function renderCategoryBar() {
     }
   });
 
-  // 长按显示删除按钮
-  bar.querySelectorAll('.cat-wrap').forEach(wrap => {
+  // 长按显示删除 / 长按拖拽排序
+  setupCategoryDrag(bar);
+}
+
+function setupCategoryDrag(bar) {
+  const wraps = bar.querySelectorAll('.cat-wrap');
+  let dragEl = null, clone = null, startY = 0, startIdx = -1, currentIdx = -1;
+  let longPressTimer, isDragging = false;
+
+  wraps.forEach((wrap, idx) => {
     const delBtn = wrap.querySelector('.cat-del');
-    let longPressTimer;
+
     wrap.addEventListener('touchstart', (e) => {
       e.preventDefault();
-      longPressTimer = setTimeout(() => { delBtn.style.display='flex'; }, 600);
+      const touch = e.touches[0];
+      startY = touch.clientY;
+      startIdx = idx;
+      isDragging = false;
+      longPressTimer = setTimeout(() => {
+        // 长按到时间了——但如果手指已经移动了就不显示删除
+      }, 500);
     }, {passive:false});
-    wrap.addEventListener('touchend', () => { clearTimeout(longPressTimer); });
-    wrap.addEventListener('touchmove', () => { clearTimeout(longPressTimer); });
-    wrap.addEventListener('contextmenu', (e) => { e.preventDefault(); });
-    // 点击空白处隐藏所有删除按钮
-    document.addEventListener('click', (e) => {
-      if (!wrap.contains(e.target)) delBtn.style.display='none';
+
+    wrap.addEventListener('touchmove', (e) => {
+      const touch = e.touches[0];
+      const dy = Math.abs(touch.clientY - startY);
+      if (dy > 8) {
+        // 手指移动了，取消待定的长按，开始拖拽
+        clearTimeout(longPressTimer);
+        if (!isDragging) {
+          isDragging = true;
+          dragEl = wrap;
+          dragEl.style.opacity = '0.4';
+          // 创建拖拽克隆
+          clone = dragEl.cloneNode(true);
+          clone.style.position = 'fixed';
+          clone.style.zIndex = '999';
+          clone.style.left = dragEl.getBoundingClientRect().left + 'px';
+          clone.style.top = (touch.clientY - 20) + 'px';
+          clone.style.width = dragEl.offsetWidth + 'px';
+          clone.style.opacity = '0.9';
+          clone.style.pointerEvents = 'none';
+          clone.querySelector('.cat-del').style.display = 'none';
+          document.body.appendChild(clone);
+        }
+        // 移动克隆
+        if (clone) {
+          clone.style.top = (touch.clientY - 20) + 'px';
+          // 判断当前悬停在哪个位置
+          const cats = getCategories();
+          let newIdx = -1;
+          wraps.forEach((w, i) => {
+            const r = w.getBoundingClientRect();
+            const mid = r.top + r.height / 2;
+            if (touch.clientY > mid) newIdx = i;
+          });
+          if (newIdx !== -1 && newIdx !== currentIdx) {
+            currentIdx = newIdx;
+            // 高亮目标位置
+            wraps.forEach(w => w.style.borderTop = 'none');
+            if (currentIdx >= 0 && currentIdx < wraps.length) {
+              wraps[currentIdx].style.borderTop = '2px solid var(--blue)';
+            }
+          }
+        }
+      }
+    }, {passive:false});
+
+    wrap.addEventListener('touchend', () => {
+      clearTimeout(longPressTimer);
+      if (!isDragging) {
+        // 没拖动——显示/隐藏删除按钮
+        delBtn.style.display = delBtn.style.display === 'flex' ? 'none' : 'flex';
+      } else {
+        // 拖拽结束——排序
+        if (clone) { clone.remove(); clone = null; }
+        wraps.forEach(w => { w.style.borderTop = 'none'; w.style.opacity = '1'; });
+        if (dragEl) dragEl.style.opacity = '1';
+
+        if (currentIdx >= 0 && currentIdx !== startIdx) {
+          const cats = getCategories();
+          const [moved] = cats.splice(startIdx, 1);
+          cats.splice(currentIdx, 0, moved);
+          saveCategories(cats);
+          renderCategoryBar();
+        }
+        dragEl = null; currentIdx = -1; startIdx = -1; isDragging = false;
+      }
     });
+
+    wrap.addEventListener('contextmenu', (e) => { e.preventDefault(); });
+  });
+
+  // 点击空白处隐藏所有删除按钮
+  document.addEventListener('click', (e) => {
+    wraps.forEach(w => { w.querySelector('.cat-del').style.display = 'none'; });
   });
 }
 
