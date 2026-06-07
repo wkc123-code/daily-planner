@@ -27,6 +27,7 @@
     <div class="date-strip" id="dateStrip"></div>
     <button class="date-arrow" onclick="shiftDate(5)">▶</button>
   </div>
+  <div style="font-size:8px;text-align:center;color:#ccc;">v2.4</div>
 
   <!-- 统计栏 -->
   <div class="stats" id="statsBar" style="display:none">
@@ -166,6 +167,18 @@
     <div class="dialog-actions">
       <button type="button" class="btn-cancel" onclick="closeAnniDialog()">取消</button>
       <button type="submit" class="btn-save">保存</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ==================== 新增分类弹窗 ==================== -->
+<dialog id="catDialog">
+  <form id="catForm" method="dialog" style="padding:20px;text-align:center;background:#E3F2FD;">
+    <h3 style="margin-bottom:12px;">新增</h3>
+    <input type="text" id="catName" placeholder="分类名称" autocomplete="off" style="width:100%;padding:10px;border:1px solid #BBDEFB;border-radius:8px;font-size:15px;">
+    <div class="dialog-actions" style="margin-top:12px;">
+      <button type="button" onclick="closeCatDialog()" class="btn-cancel">取消</button>
+      <button type="submit" class="btn-save">确定</button>
     </div>
   </form>
 </dialog>

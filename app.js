@@ -220,16 +220,46 @@ function goToday() { dateStripCenter=new Date(); selectedDate=todayStr(); render
 function renderCategoryBar() {
   const cats = getCategories();
   const bar = $('#categoryBar');
-  bar.innerHTML = cats.map(c => '<button class="cat-chip'+(c===currentCategory?' active':'')+'" data-cat="'+escAttr(c)+'">'+esc(c)+'</button>').join('')
-    + '<button class="cat-chip cat-add" onclick="openAddCategory()">＋</button>';
+  let html = '';
+  cats.forEach(c => {
+    html += '<div class="cat-wrap"><button class="cat-chip'+(c===currentCategory?' active':'')+'" data-cat="'+escAttr(c)+'">'+esc(c)+'</button><span class="cat-del" data-del="'+escAttr(c)+'" onclick="delCat(event,\''+escAttr(c)+'\')">×</span></div>';
+  });
+  html += '<button class="cat-chip cat-add" onclick="openAddCategory()">＋</button>';
+  bar.innerHTML = html;
+
   bar.querySelectorAll('.cat-chip').forEach(chip => {
     if (chip.dataset.cat) {
       chip.addEventListener('click',()=>{ currentCategory=chip.dataset.cat; renderCategoryBar(); loadTasks(); });
-      chip.addEventListener('contextmenu',e=>{ e.preventDefault(); const cat=chip.dataset.cat; if (getCategories().length<=1){alert('至少保留一个分类');return;} if (confirm('删除分类「'+cat+'」？')) { deleteCategory(cat); if (currentCategory===cat) currentCategory=getCategories()[0]; renderCategoryBar(); loadTasks(); }});
     }
   });
+
+  // 长按显示删除按钮
+  bar.querySelectorAll('.cat-wrap').forEach(wrap => {
+    const delBtn = wrap.querySelector('.cat-del');
+    let longPressTimer;
+    wrap.addEventListener('touchstart', (e) => {
+      longPressTimer = setTimeout(() => { delBtn.style.display='flex'; }, 600);
+    }, {passive:true});
+    wrap.addEventListener('touchend', () => { clearTimeout(longPressTimer); });
+    wrap.addEventListener('touchmove', () => { clearTimeout(longPressTimer); });
+    // 点击空白处隐藏所有删除按钮
+    document.addEventListener('click', (e) => {
+      if (!wrap.contains(e.target)) delBtn.style.display='none';
+    });
+  });
 }
-function openAddCategory() { const name=prompt('输入新分类名称：'); if (name&&name.trim()){ addCategory(name.trim()); renderCategoryBar(); loadTasks(); } }
+
+function delCat(e, cat) {
+  e.stopPropagation();
+  if (getCategories().length <= 1) { alert('至少保留一个分类'); return; }
+  deleteCategory(cat);
+  if (currentCategory === cat) currentCategory = getCategories()[0];
+  renderCategoryBar();
+  loadTasks();
+}
+function openAddCategory() { $('#catName').value=''; $('#catDialog').showModal(); }
+function closeCatDialog() { $('#catDialog').close(); }
+$('#catForm').addEventListener('submit', function(e){ e.preventDefault(); const name=$('#catName').value.trim(); if(name){ addCategory(name); renderCategoryBar(); loadTasks(); } $('#catDialog').close(); });
 
 // ==================== 任务列表 ====================
 async function loadTasks() {
