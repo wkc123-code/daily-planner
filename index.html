@@ -172,7 +172,7 @@
 </dialog>
 
 <!-- ==================== 新增分类弹窗 ==================== -->
-<dialog id="catDialog">
+<dialog id="catDialog" onclick="if(event.target===this) this.close();">
   <form id="catForm" method="dialog" style="padding:20px;text-align:center;background:#E3F2FD;">
     <h3 style="margin-bottom:12px;">新增</h3>
     <input type="text" id="catName" placeholder="分类名称" autocomplete="off" style="width:100%;padding:10px;border:1px solid #BBDEFB;border-radius:8px;font-size:15px;">
