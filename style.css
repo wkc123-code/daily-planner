@@ -1,20 +1,20 @@
 /* ========== 全局样式 ========== */
 * { margin:0; padding:0; box-sizing:border-box; }
 :root {
-  --blue: #1976d2;
-  --red: #d32f2f;
-  --orange: #e65100;
-  --green: #2e7d32;
-  --grey: #757575;
-  --bg: #f5f5f5;
-  --card: #ffffff;
-  --radius: 14px;
-  --shadow: 0 1px 3px rgba(0,0,0,0.1);
+  --blue: #3B5998;
+  --red: #C0392B;
+  --orange: #D35400;
+  --green: #27AE60;
+  --grey: #95A5A6;
+  --bg: #F0F2F5;
+  --card: #FFFFFF;
+  --radius: 12px;
+  --shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 body {
   font-family: -apple-system, "Microsoft YaHei", "PingFang SC", sans-serif;
   background: var(--bg);
-  color: #212121;
+  color: #2C3E50;
   max-width: 480px;
   margin: 0 auto;
   min-height: 100dvh;
