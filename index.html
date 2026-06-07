@@ -15,13 +15,11 @@
 <!-- ==================== 主屏幕 ==================== -->
 <main id="homeScreen">
   <header>
-    <h1>记忆点</h1>
     <p id="currentDateDisplay"></p>
-    <div id="permBar" style="display:none;background:#fff3e0;padding:8px 16px;text-align:center;border-bottom:1px solid #ffe0b2;">
-      <span style="font-size:13px;color:#e65100;">⚠️ 通知权限未开启</span>
-      <button id="permBtn" style="margin-left:10px;padding:4px 14px;background:#1976d2;color:#fff;border:none;border-radius:14px;font-size:13px;">点此开启</button>
-    </div>
   </header>
+  <div id="permBar" style="display:none;background:#FFF3E0;padding:6px 16px;text-align:center;font-size:13px;color:#E65100;">
+    ⚠️ 通知权限未开启 <button id="permBtn" style="margin-left:8px;padding:3px 12px;background:#1976d2;color:#fff;border:none;border-radius:12px;font-size:12px;">点此开启</button>
+  </div>
 
   <!-- 日期选择器 -->
   <div class="date-nav">
@@ -185,10 +183,5 @@
 </dialog>
 
 <script src="app.js"></script>
-
-<!-- 调试面板 -->
-<div id="debugPanel" style="position:fixed;bottom:65px;left:0;right:0;background:#222;color:#0f0;font-size:10px;padding:4px 10px;z-index:99;opacity:0.9;max-width:480px;margin:0 auto;">
-  <span id="debugStatus">等待检查...</span>
-</div>
 </body>
 </html>

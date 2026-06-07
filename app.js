@@ -357,10 +357,7 @@ function switchTab(tab){
 }
 
 // ==================== 提醒通知 ====================
-function dbg(msg) {
-  const el = document.getElementById('debugStatus');
-  if (el) { const n = new Date(); el.textContent = '['+pad(n.getHours())+':'+pad(n.getMinutes())+':'+pad(n.getSeconds())+'] '+msg; }
-}
+function dbg(msg) { /* 调试已关闭 */ }
 
 function hasNotifyCapability() {
   return (typeof AndroidReminder !== 'undefined') || ('Notification' in window && Notification.permission === 'granted');
