@@ -1,6 +1,6 @@
 {
-  "name": "每日任务管理",
-  "short_name": "每日任务",
+  "name": "记忆点",
+  "short_name": "记忆点",
   "description": "日常事务安排与纪念日提醒",
   "start_url": ".",
   "display": "standalone",
