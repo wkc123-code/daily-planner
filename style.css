@@ -17,11 +17,12 @@ body {
   color: #2C3E50;
   max-width: 480px;
   margin: 0 auto;
-  min-height: 100dvh;
+  height: 100dvh;
   position: relative;
-  overflow-x: hidden;
+  overflow: hidden;
   -webkit-tap-highlight-color: transparent;
 }
+main { display: flex; flex-direction: column; height: 100%; }
 
 /* ========== 头部 ========== */
 header {
@@ -87,6 +88,7 @@ header p { font-size: 13px; opacity: 0.9; }
   flex: 1;
   min-height: 0;
   background: var(--bg);
+  height: 0;
 }
 .sidebar {
   width: 80px; min-width: 80px;
@@ -95,6 +97,7 @@ header p { font-size: 13px; opacity: 0.9; }
   display: flex;
   flex-direction: column;
   padding: 8px 0;
+  align-self: stretch;
 }
 .cat-chip {
   padding: 12px 6px;
@@ -118,7 +121,6 @@ header p { font-size: 13px; opacity: 0.9; }
   padding: 8px 4px;
   font-size: 18px;
   color: #aaa;
-  margin-top: auto;
 }
 
 /* ========== 任务区网格 ========== */
