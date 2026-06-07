@@ -36,19 +36,21 @@ header p { font-size: 13px; opacity: 0.9; }
 .date-row {
   display: flex;
   align-items: center;
-  padding: 8px 6px;
+  justify-content: space-between;
+  padding: 8px 8px;
   background: #fff;
   border-bottom: 1px solid #E8E8E8;
 }
 .date-arrow {
-  width: 32px; height: 32px;
+  width: 36px; min-width: 36px;
+  height: 36px;
   border-radius: 50%;
-  border: none;
-  background: transparent;
-  font-size: 14px;
+  border: 1px solid #E0E0E0;
+  background: #fff;
+  font-size: 16px;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  color: #888;
+  color: #555;
   flex-shrink: 0;
 }
 .date-arrow:active { background: #F0F2F5; }
