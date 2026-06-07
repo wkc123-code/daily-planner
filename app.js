@@ -238,10 +238,12 @@ function renderCategoryBar() {
     const delBtn = wrap.querySelector('.cat-del');
     let longPressTimer;
     wrap.addEventListener('touchstart', (e) => {
+      e.preventDefault();
       longPressTimer = setTimeout(() => { delBtn.style.display='flex'; }, 600);
-    }, {passive:true});
+    }, {passive:false});
     wrap.addEventListener('touchend', () => { clearTimeout(longPressTimer); });
     wrap.addEventListener('touchmove', () => { clearTimeout(longPressTimer); });
+    wrap.addEventListener('contextmenu', (e) => { e.preventDefault(); });
     // 点击空白处隐藏所有删除按钮
     document.addEventListener('click', (e) => {
       if (!wrap.contains(e.target)) delBtn.style.display='none';

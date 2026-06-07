@@ -23,6 +23,8 @@ body {
   display: flex;
   flex-direction: column;
   -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
 }
 main { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
