@@ -22,12 +22,11 @@
   </div>
 
   <!-- 日期选择器 -->
-  <div class="date-nav">
-    <button class="date-nav-btn" onclick="shiftDate(-7)" title="上一周">◀</button>
-    <button class="date-nav-today" onclick="goToday()">今天</button>
-    <button class="date-nav-btn" onclick="shiftDate(7)" title="下一周">▶</button>
+  <div class="date-row">
+    <button class="date-arrow" onclick="shiftDate(-5)">◀</button>
+    <div class="date-strip" id="dateStrip"></div>
+    <button class="date-arrow" onclick="shiftDate(5)">▶</button>
   </div>
-  <div class="date-strip" id="dateStrip"></div>
 
   <!-- 分类标签栏 -->
   <div class="category-bar" id="categoryBar"></div>

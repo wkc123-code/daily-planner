@@ -201,7 +201,7 @@ function renderDateStrip() {
   const today = new Date();
   const todayStrVal = todayStr();
   const dates = [];
-  for (let i = -3; i <= 3; i++) { const d = new Date(dateStripCenter); d.setDate(d.getDate()+i); dates.push(d); }
+  for (let i = -2; i <= 2; i++) { const d = new Date(dateStripCenter); d.setDate(d.getDate()+i); dates.push(d); }
   strip.innerHTML = dates.map(d => {
     const ds = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
     const todayClass = ds === todayStrVal ? ' today' : '';

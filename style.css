@@ -32,47 +32,32 @@ header {
 }
 header p { font-size: 13px; opacity: 0.9; }
 
-/* ========== 日期导航栏 ========== */
-.date-nav {
+/* ========== 日期选择器 ========== */
+.date-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 8px 16px;
+  padding: 8px 6px;
   background: #fff;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #E8E8E8;
 }
-.date-nav-btn {
-  width: 36px; height: 36px;
+.date-arrow {
+  width: 32px; height: 32px;
   border-radius: 50%;
-  border: 1px solid #e0e0e0;
-  background: #fff;
-  font-size: 16px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  color: #555;
+  color: #888;
+  flex-shrink: 0;
 }
-.date-nav-btn:active { background: #f0f0f0; }
-.date-nav-today {
-  padding: 6px 20px;
-  border-radius: 20px;
-  border: none;
-  background: var(--blue);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-.date-nav-today:active { opacity: 0.8; }
+.date-arrow:active { background: #F0F2F5; }
 
-/* ========== 日期选择器 ========== */
 .date-strip {
   display: flex;
-  overflow-x: auto;
-  gap: 8px;
-  padding: 10px 16px;
-  background: #fff;
-  border-bottom: 1px solid #e0e0e0;
-  scroll-behavior: smooth;
+  gap: 4px;
+  flex: 1;
+  justify-content: center;
 }
 .date-strip::-webkit-scrollbar { display: none; }
 .date-chip {
