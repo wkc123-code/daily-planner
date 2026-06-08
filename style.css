@@ -314,33 +314,25 @@ header p { font-size: 13px; opacity: 0.9; }
 .empty-state .empty-title { font-size: 16px; margin-top: 12px; color: #999; }
 .empty-state .empty-sub { font-size: 13px; margin-top: 4px; color: #bbb; }
 
-/* ========== FAB ========== */
-.fab-row {
-  position: fixed; bottom: 52px;
-  left: 0; right: 0;
-  display: flex; justify-content: center;
-  z-index: 20;
-  pointer-events: none;
-}
-.fab-row .fab { pointer-events: auto; }
-.fab {
-  width: 52px; height: 52px;
+/* ========== 行内加号按钮 ========== */
+.fab-inline {
+  width: 42px; height: 42px;
   border-radius: 50%;
   background: var(--blue);
   color: #fff;
-  font-size: 26px;
+  font-size: 22px;
   border: none;
-  box-shadow: 0 4px 12px rgba(59,89,152,0.4);
+  box-shadow: 0 3px 8px rgba(59,89,152,0.35);
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  margin: 0 4px;
   transition: transform 0.2s;
 }
-.fab:active { transform: scale(0.9); }
+.fab-inline:active { transform: scale(0.9); }
 
 /* ========== 看板 ========== */
-#kanbanScreen { flex-direction: column; }
+#kanbanScreen, #notesScreen { display: flex; flex-direction: column; }
 .kb-month-nav {
   display: flex; align-items: center; justify-content: space-between;
   padding: 10px 16px; background: #fff; border-bottom: 1px solid #E8E8E8;
@@ -384,6 +376,15 @@ header p { font-size: 13px; opacity: 0.9; }
 .kb-task-row .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 .kb-task-row.done .kb-task-text { text-decoration: line-through; color: #999; }
 
+/* ========== 随手记 ========== */
+.notes-input-area { padding: 12px 16px; background: #fff; border-bottom: 1px solid #E8E8E8; }
+.notes-input-area textarea { width: 100%; border: 1px solid #DDD; border-radius: 10px; padding: 10px; font-size: 14px; font-family: inherit; resize: vertical; }
+.note-save-btn { margin-top: 8px; padding: 8px 24px; background: var(--blue); color: #fff; border: none; border-radius: 20px; font-size: 13px; cursor: pointer; }
+.notes-list { padding: 10px 16px 80px; }
+.note-card { background: #fff; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; box-shadow: var(--shadow); }
+.note-card .note-time { font-size: 11px; color: #999; margin-bottom: 4px; }
+.note-card .note-text { font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-break: break-all; }
+
 /* ========== 底部导航 ========== */
 .bottom-nav {
   flex-shrink: 0;
@@ -395,10 +396,10 @@ header p { font-size: 13px; opacity: 0.9; }
 }
 .nav-btn {
   flex: 1;
-  padding: 10px 4px;
+  padding: 8px 2px;
   border: none;
   background: none;
-  font-size: 13px;
+  font-size: 11px;
   cursor: pointer;
   color: #999;
   transition: all 0.2s;

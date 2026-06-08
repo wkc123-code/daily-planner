@@ -549,16 +549,39 @@ function fabClick() {
 
 function switchTab(tab){
   currentTab = tab;
-  $('#homeScreen').style.display='none'; $('#anniversaryScreen').style.display='none'; $('#kanbanScreen').style.display='none';
+  $('#homeScreen').style.display='none'; $('#anniversaryScreen').style.display='none'; $('#kanbanScreen').style.display='none'; $('#notesScreen').style.display='none';
   if (tab === 'tasks') { $('#homeScreen').style.display=''; loadTasks(); }
   else if (tab === 'kanban') { if (!kbYear) initKanban(); $('#kanbanScreen').style.display='flex'; $('#kanbanScreen').style.flexDirection='column'; renderKanban(); }
-  else { $('#anniversaryScreen').style.display=''; loadAnniversaries(); }
+  else if (tab === 'anniversaries') { $('#anniversaryScreen').style.display=''; loadAnniversaries(); }
+  else if (tab === 'notes') { $('#notesScreen').style.display=''; renderNotes(); }
   document.querySelectorAll('.bottom-nav').forEach(nav => {
     const btns = nav.querySelectorAll('.nav-btn'); btns.forEach(b => b.classList.remove('active'));
-    if (tab === 'tasks') btns[0]?.classList.add('active');
-    else if (tab === 'kanban') btns[1]?.classList.add('active');
-    else btns[2]?.classList.add('active');
+    const idx = {tasks:0, kanban:1, anniversaries:2, notes:3};
+    if (btns[idx[tab]]) btns[idx[tab]].classList.add('active');
   });
+}
+
+// ==================== 随手记 ====================
+function saveNote() {
+  const text = $('#noteInput').value.trim();
+  if (!text) return;
+  const notes = JSON.parse(localStorage.getItem('notes') || '[]');
+  notes.unshift({ id: Date.now(), text: text, time: new Date().toISOString() });
+  localStorage.setItem('notes', JSON.stringify(notes));
+  $('#noteInput').value = '';
+  renderNotes();
+}
+
+function renderNotes() {
+  const notes = JSON.parse(localStorage.getItem('notes') || '[]');
+  let html = '';
+  notes.forEach(n => {
+    const t = new Date(n.time);
+    const ts = t.getFullYear()+'-'+pad(t.getMonth()+1)+'-'+pad(t.getDate())+' '+pad(t.getHours())+':'+pad(t.getMinutes());
+    html += '<div class="note-card"><div class="note-time">'+ts+'</div><div class="note-text">'+esc(n.text)+'</div></div>';
+  });
+  if (!html) html = '<div class="empty-state" style="padding:40px"><div class="empty-icon">📝</div><div class="empty-title">暂无记录</div><div class="empty-sub">写下你此刻的想法</div></div>';
+  $('#notesList').innerHTML = html;
 }
 
 // ==================== 提醒通知 ====================
