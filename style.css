@@ -94,7 +94,7 @@ header p { font-size: 13px; opacity: 0.9; }
   background: var(--bg);
 }
 .sidebar {
-  width: 110px; min-width: 110px;
+  width: 95px; min-width: 95px;
   background: #fff;
   display: flex;
   flex-direction: column;
@@ -117,22 +117,22 @@ header p { font-size: 13px; opacity: 0.9; }
   cursor: pointer;
   color: #444;
   text-align: left;
-  transition: width 0.4s cubic-bezier(0.25,0.1,0.25,1), transform 0.4s cubic-bezier(0.25,0.1,0.25,1), background 0.3s, box-shadow 0.3s;
+  transition: width 0.3s cubic-bezier(0.25,0.1,0.25,1), transform 0.3s cubic-bezier(0.25,0.1,0.25,1), background 0.3s ease, box-shadow 0.3s, color 0.3s ease;
   letter-spacing: 0.5px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.1);
   position: relative;
   z-index: 1;
 }
-.cat-wrap:nth-child(1) .cat-chip { width: 90px; }
-.cat-wrap:nth-child(2) .cat-chip { width: 96px; }
-.cat-wrap:nth-child(3) .cat-chip { width: 102px; }
-.cat-wrap:nth-child(4) .cat-chip { width: 108px; }
-.cat-wrap:nth-child(n+5) .cat-chip { width: 110px; }
+.cat-wrap:nth-child(1) .cat-chip { width: 78px; }
+.cat-wrap:nth-child(2) .cat-chip { width: 83px; }
+.cat-wrap:nth-child(3) .cat-chip { width: 88px; }
+.cat-wrap:nth-child(4) .cat-chip { width: 93px; }
+.cat-wrap:nth-child(n+5) .cat-chip { width: 95px; }
 .cat-chip.active {
   background: var(--blue);
   color: #fff;
   font-weight: 700;
-  width: 124px !important;
+  width: 108px !important;
   transform: translateX(6px);
   box-shadow: 0 4px 16px rgba(59,89,152,0.4);
   z-index: 99 !important;
@@ -170,12 +170,20 @@ header p { font-size: 13px; opacity: 0.9; }
 /* ========== 任务区网格 ========== */
 .task-area {
   flex: 1;
-  padding: 8px;
+  padding: 8px 12px 8px 26px;
   overflow-y: auto;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
-  align-content: start;
+}
+
+/* 卡片波浪入场 */
+@keyframes waveIn {
+  from { opacity: 0; transform: translateY(-12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.task-item {
+  animation: waveIn 0.3s ease-out both;
 }
 
 /* ========== 提醒行 ========== */

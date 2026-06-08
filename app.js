@@ -244,7 +244,8 @@ function switchCategory(cat) {
   const newChip = document.querySelector('.cat-chip[data-cat="'+escAttr(cat)+'"]');
   if (newChip) newChip.classList.add('active');
   currentCategory = cat;
-  loadTasks(); // 动画进行中同步刷新内容
+  // 等标签动画完成后再显示卡片
+  setTimeout(loadTasks, 300);
 }
 
 function setupCategoryDrag(bar) {
@@ -361,17 +362,18 @@ async function loadTasks() {
   const list = $('#taskList');
   const stats = $('#statsBar');
   if (tasks.length === 0) {
-    list.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">📋</div><div class="empty-title">暂无任务</div><div class="empty-sub">点击 ＋ 添加新任务</div></div>';
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">暂无任务</div><div class="empty-sub">点击 ＋ 添加新任务</div></div>';
     stats.style.display = 'none';
   } else {
     const done = tasks.filter(t=>t.isCompleted).length;
     $('#doneCount').textContent = done; $('#todoCount').textContent = tasks.length - done;
     stats.style.display = '';
-    list.innerHTML = tasks.map(t => {
+    list.innerHTML = tasks.map((t,i) => {
       const pc = ['pri-low','pri-mid','pri-high'][t.priority]||'pri-mid';
       const pl = ['低','中','高'][t.priority]||'中';
       const rl = t.repeatType==='weekdays'?' 🔁工作日':t.repeatType==='daily'?' 🔁每天':t.repeatType==='weekly'?' 🔁每周':'';
-      return '<div class="task-item'+(t.isCompleted?' done':'')+'" data-id="'+t.id+'"><div class="checkbox" data-toggle="'+t.id+'">'+(t.isCompleted?'✓':'')+'</div><div class="task-info"><div class="task-title">'+esc(t.title)+rl+'</div><div class="task-desc">'+esc(t.description||'')+'</div></div><span class="pri-badge '+pc+'">'+pl+'</span><div class="delete-action" data-delete="'+t.id+'">删除</div></div>';
+      const delay = (i * 0.3).toFixed(1);
+      return '<div class="task-item'+(t.isCompleted?' done':'')+'" data-id="'+t.id+'" style="animation-delay:'+delay+'s"><div class="checkbox" data-toggle="'+t.id+'">'+(t.isCompleted?'✓':'')+'</div><div class="task-info"><div class="task-title">'+esc(t.title)+rl+'</div><div class="task-desc">'+esc(t.description||'')+'</div></div><span class="pri-badge '+pc+'">'+pl+'</span><div class="delete-action" data-delete="'+t.id+'">删除</div></div>';
     }).join('');
     list.querySelectorAll('.checkbox').forEach(cb => { cb.addEventListener('click',async e=>{ e.stopPropagation(); const id=cb.dataset.toggle; const task=tasks.find(t=>t.id===id); if(task){await toggleTaskComplete(task);loadTasks();}}); });
     list.querySelectorAll('.task-item').forEach(item => { item.addEventListener('click',e=>{ if(e.target.closest('.checkbox')||e.target.closest('.delete-action'))return; const t=tasks.find(x=>x.id===item.dataset.id); if(t)openTaskEdit(t);}); });
