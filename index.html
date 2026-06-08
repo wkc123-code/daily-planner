@@ -44,6 +44,7 @@
   <!-- 底部导航 -->
   <nav class="bottom-nav">
     <button class="nav-btn active" onclick="switchTab('tasks')">📋 任务</button>
+    <button class="nav-btn" onclick="switchTab('kanban')">📅 看板</button>
     <button class="nav-btn" onclick="switchTab('anniversaries')">🎂 纪念日</button>
   </nav>
 
@@ -124,10 +125,34 @@
 
   <nav class="bottom-nav">
     <button class="nav-btn" onclick="switchTab('tasks')">📋 任务</button>
+    <button class="nav-btn" onclick="switchTab('kanban')">📅 看板</button>
     <button class="nav-btn active" onclick="switchTab('anniversaries')">🎂 纪念日</button>
   </nav>
 
   <button class="fab" onclick="openAnniEdit()">＋</button>
+</main>
+
+<!-- ==================== 看板屏幕 ==================== -->
+<main id="kanbanScreen" style="display:none">
+  <div class="kb-month-nav">
+    <button class="kb-month-btn" onclick="changeMonth(-1)">◀</button>
+    <span class="kb-month-title" id="kbMonthTitle"></span>
+    <button class="kb-month-btn" onclick="changeMonth(1)">▶</button>
+  </div>
+  <div class="kb-weekdays">
+    <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+  </div>
+  <div class="kb-grid" id="kbGrid"></div>
+  <div class="kb-preview" id="kbPreview">
+    <div class="kb-preview-date" id="kbPreviewDate"></div>
+    <div class="kb-preview-list" id="kbPreviewList"></div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn" onclick="switchTab('tasks')">📋 任务</button>
+    <button class="nav-btn active" onclick="switchTab('kanban')">📅 看板</button>
+    <button class="nav-btn" onclick="switchTab('anniversaries')">🎂 纪念日</button>
+  </nav>
 </main>
 
 <!-- ==================== 纪念日编辑弹窗 ==================== -->

@@ -338,6 +338,51 @@ header p { font-size: 13px; opacity: 0.9; }
   .fab { right: 20px; }
 }
 
+#kanbanScreen { display: flex; flex-direction: column; }
+/* ========== 看板 ========== */
+.kb-month-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px; background: #fff; border-bottom: 1px solid #E8E8E8;
+}
+.kb-month-btn {
+  width: 32px; height: 32px; border-radius: 50%; border: 1px solid #DDD;
+  background: #fff; font-size: 14px; cursor: pointer; color: #555;
+}
+.kb-month-title { font-size: 16px; font-weight: 700; }
+.kb-weekdays {
+  display: grid; grid-template-columns: repeat(7,1fr);
+  padding: 6px 8px; background: #fff; text-align: center;
+  font-size: 12px; color: #999; border-bottom: 1px solid #EEE;
+}
+.kb-grid {
+  display: grid; grid-template-columns: repeat(7,1fr);
+  gap: 2px; padding: 4px 8px; background: #fff;
+}
+.kb-day {
+  aspect-ratio: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; font-size: 13px;
+  border-radius: 8px; cursor: pointer; position: relative;
+}
+.kb-day.other-month { color: #CCC; }
+.kb-day.today { background: #E3F2FD; font-weight: 700; }
+.kb-day.selected { background: var(--blue); color: #fff; }
+.kb-day.has-tasks::after {
+  content: ''; position: absolute; bottom: 4px; width: 4px; height: 4px;
+  border-radius: 50%; background: var(--orange);
+}
+.kb-day.selected.has-tasks::after { background: #fff; }
+.kb-preview {
+  padding: 10px 16px; background: var(--bg); flex: 1; overflow-y: auto;
+}
+.kb-preview-date { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.kb-preview-list { display: flex; flex-direction: column; gap: 4px; }
+.kb-cat-group { margin-bottom: 8px; }
+.kb-cat-title { font-size: 12px; color: var(--blue); font-weight: 600; margin-bottom: 4px; padding-left: 4px; }
+.kb-task-row { display: flex; align-items: center; gap: 8px; padding: 6px 10px;
+  background: #fff; border-radius: 8px; margin-bottom: 3px; font-size: 13px; }
+.kb-task-row .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.kb-task-row.done .kb-task-text { text-decoration: line-through; color: #999; }
+
 /* ========== 底部导航 ========== */
 .bottom-nav {
   position: fixed;

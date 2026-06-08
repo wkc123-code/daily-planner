@@ -465,9 +465,93 @@ function closeConfirm(){$('#confirmDialog').close();pendingDelete=null;}
 $('#taskDatePicker').addEventListener('change',function(){$('#taskDate').value=this.value;});
 
 // ==================== 标签切换 ====================
+// ==================== 看板 ====================
+let kbYear, kbMonth, kbSelectedDate;
+
+function initKanban() {
+  const now = new Date();
+  kbYear = now.getFullYear(); kbMonth = now.getMonth() + 1;
+  kbSelectedDate = todayStr();
+}
+
+function changeMonth(delta) {
+  kbMonth += delta;
+  if (kbMonth > 12) { kbMonth = 1; kbYear++; }
+  if (kbMonth < 1) { kbMonth = 12; kbYear--; }
+  renderKanban();
+}
+
+async function renderKanban() {
+  $('#kbMonthTitle').textContent = kbYear + '年' + kbMonth + '月';
+  const firstDay = new Date(kbYear, kbMonth-1, 1);
+  const lastDay = new Date(kbYear, kbMonth, 0);
+  const totalDays = lastDay.getDate();
+  let startOffset = firstDay.getDay() - 1;
+  if (startOffset < 0) startOffset = 6;
+
+  const today = todayStr();
+  const allTasks = await getAllTasksRaw();
+  const taskDays = {};
+  allTasks.forEach(t => { taskDays[t.targetDate] = 1; });
+
+  let html = '';
+  for (let i = 0; i < startOffset; i++) html += '<div class="kb-day other-month"></div>';
+  for (let d = 1; d <= totalDays; d++) {
+    const ds = kbYear+'-'+pad(kbMonth)+'-'+pad(d);
+    let cls = 'kb-day';
+    if (ds === today) cls += ' today';
+    if (ds === kbSelectedDate) cls += ' selected';
+    if (taskDays[ds]) cls += ' has-tasks';
+    html += '<div class="'+cls+'" data-date="'+ds+'">'+d+'</div>';
+  }
+  $('#kbGrid').innerHTML = html;
+  $('#kbGrid').querySelectorAll('.kb-day:not(.other-month)').forEach(el => {
+    el.addEventListener('click', () => {
+      kbSelectedDate = el.dataset.date;
+      renderKanban();
+      loadKanbanPreview(kbSelectedDate);
+    });
+  });
+  loadKanbanPreview(kbSelectedDate);
+}
+
+async function loadKanbanPreview(dateStr) {
+  $('#kbPreviewDate').textContent = dateStr;
+  const all = await getAllTasksRaw();
+  const d = new Date(dateStr+'T00:00:00'); const dow = d.getDay();
+  const tasks = all.filter(t => t.targetDate === dateStr || isRepeatMatch(t, dateStr, dow));
+  const cats = getCategories();
+  const groups = {};
+  cats.forEach(c => { groups[c] = []; });
+  tasks.forEach(t => { const cat = t.category || cats[0]; if (!groups[cat]) groups[cat] = []; groups[cat].push(t); });
+
+  let html = '';
+  cats.forEach(cat => {
+    const list = groups[cat] || [];
+    if (list.length === 0) return;
+    html += '<div class="kb-cat-group"><div class="kb-cat-title">' + esc(cat) + '</div>';
+    list.forEach(t => {
+      const done = t.isCompleted ? ' done' : '';
+      const dc = t.isCompleted ? '#27AE60' : (['#95A5A6','#D35400','#C0392B'][t.priority]||'#D35400');
+      html += '<div class="kb-task-row'+done+'"><span class="dot" style="background:'+dc+'"></span><span class="kb-task-text">'+esc(t.title)+'</span></div>';
+    });
+    html += '</div>';
+  });
+  if (!html) html = '<div class="empty-state" style="padding:20px"><div class="empty-title">当天无任务</div></div>';
+  $('#kbPreviewList').innerHTML = html;
+}
+
 function switchTab(tab){
-  if(tab==='tasks'){ $('#homeScreen').style.display='';$('#anniversaryScreen').style.display='none';$$('.nav-btn')[0].classList.add('active');$$('.nav-btn')[1].classList.remove('active');loadTasks(); }
-  else{ $('#homeScreen').style.display='none';$('#anniversaryScreen').style.display='';$$('.nav-btn')[0].classList.remove('active');$$('.nav-btn')[1].classList.add('active');loadAnniversaries(); }
+  $('#homeScreen').style.display='none'; $('#anniversaryScreen').style.display='none'; $('#kanbanScreen').style.display='none';
+  if (tab === 'tasks') { $('#homeScreen').style.display=''; loadTasks(); }
+  else if (tab === 'kanban') { if (!kbYear) initKanban(); $('#kanbanScreen').style.display=''; renderKanban(); }
+  else { $('#anniversaryScreen').style.display=''; loadAnniversaries(); }
+  document.querySelectorAll('.bottom-nav').forEach(nav => {
+    const btns = nav.querySelectorAll('.nav-btn'); btns.forEach(b => b.classList.remove('active'));
+    if (tab === 'tasks') btns[0]?.classList.add('active');
+    else if (tab === 'kanban') btns[1]?.classList.add('active');
+    else btns[2]?.classList.add('active');
+  });
 }
 
 // ==================== 提醒通知 ====================
@@ -569,6 +653,7 @@ async function init() {
     }
   }
 
+  initKanban();
   renderCategoryBar();
   renderDateStrip();
   await loadTasks();
