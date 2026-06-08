@@ -229,12 +229,22 @@ function renderCategoryBar() {
 
   bar.querySelectorAll('.cat-chip').forEach(chip => {
     if (chip.dataset.cat) {
-      chip.addEventListener('click',()=>{ currentCategory=chip.dataset.cat; renderCategoryBar(); loadTasks(); });
+      chip.addEventListener('click',()=>{ switchCategory(chip.dataset.cat); });
     }
   });
 
   // 长按显示删除 / 长按拖拽排序
   setupCategoryDrag(bar);
+}
+
+function switchCategory(cat) {
+  if (currentCategory === cat) return;
+  // 移除所有 active（触发缩小动画），再给新标签加 active（触发伸长动画）
+  document.querySelectorAll('.cat-chip[data-cat]').forEach(c => c.classList.remove('active'));
+  const newChip = document.querySelector('.cat-chip[data-cat="'+escAttr(cat)+'"]');
+  if (newChip) newChip.classList.add('active');
+  currentCategory = cat;
+  loadTasks(); // 动画进行中同步刷新内容
 }
 
 function setupCategoryDrag(bar) {

@@ -12,7 +12,7 @@
   --shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 body {
-  font-family: -apple-system, "Microsoft YaHei", "PingFang SC", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
   background: var(--bg);
   color: #2C3E50;
   max-width: 480px;
