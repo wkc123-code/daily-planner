@@ -257,13 +257,13 @@ function setupCategoryDrag(bar) {
     const delBtn = wrap.querySelector('.cat-del');
 
     wrap.addEventListener('touchstart', (e) => {
-      e.preventDefault();
       const touch = e.touches[0];
       startY = touch.clientY;
       startIdx = idx;
       isDragging = false;
       longPressTimer = setTimeout(() => {
-        // 长按到时间了——但如果手指已经移动了就不显示删除
+        e.preventDefault();
+        delBtn.style.display = 'flex';
       }, 500);
     }, {passive:false});
 
