@@ -315,31 +315,32 @@ header p { font-size: 13px; opacity: 0.9; }
 .empty-state .empty-sub { font-size: 13px; margin-top: 4px; color: #bbb; }
 
 /* ========== FAB ========== */
+.fab-row {
+  position: fixed; bottom: 52px;
+  left: 0; right: 0;
+  display: flex; justify-content: center;
+  z-index: 20;
+  pointer-events: none;
+}
+.fab-row .fab { pointer-events: auto; }
 .fab {
-  position: fixed;
-  bottom: 80px;
-  right: calc(50% - 220px);
-  width: 56px; height: 56px;
+  width: 52px; height: 52px;
   border-radius: 50%;
   background: var(--blue);
   color: #fff;
-  font-size: 28px;
+  font-size: 26px;
   border: none;
-  box-shadow: 0 4px 12px rgba(25,118,210,0.4);
+  box-shadow: 0 4px 12px rgba(59,89,152,0.4);
   cursor: pointer;
-  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: transform 0.2s;
 }
 .fab:active { transform: scale(0.9); }
-@media (max-width:480px) {
-  .fab { right: 20px; }
-}
 
-#kanbanScreen { display: flex; flex-direction: column; }
 /* ========== 看板 ========== */
+#kanbanScreen { flex-direction: column; }
 .kb-month-nav {
   display: flex; align-items: center; justify-content: space-between;
   padding: 10px 16px; background: #fff; border-bottom: 1px solid #E8E8E8;
@@ -385,21 +386,19 @@ header p { font-size: 13px; opacity: 0.9; }
 
 /* ========== 底部导航 ========== */
 .bottom-nav {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  max-width: 480px;
-  margin: 0 auto;
+  flex-shrink: 0;
   display: flex;
   background: #fff;
   border-top: 1px solid #e0e0e0;
   z-index: 10;
+  margin-top: auto;
 }
 .nav-btn {
   flex: 1;
-  padding: 12px;
+  padding: 10px 4px;
   border: none;
   background: none;
-  font-size: 15px;
+  font-size: 13px;
   cursor: pointer;
   color: #999;
   transition: all 0.2s;

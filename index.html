@@ -27,7 +27,7 @@
     <div class="date-strip" id="dateStrip"></div>
     <button class="date-arrow" onclick="shiftDate(5)">▶</button>
   </div>
-  <div style="font-size:8px;text-align:center;color:#ccc;">v2.5</div>
+  <div style="font-size:8px;text-align:center;color:#ccc;">v3.0</div>
 
   <!-- 统计栏 -->
   <div class="stats" id="statsBar" style="display:none">
@@ -44,13 +44,14 @@
   <!-- 底部导航 -->
   <nav class="bottom-nav">
     <button class="nav-btn active" onclick="switchTab('tasks')">📋 任务</button>
-    <button class="nav-btn" onclick="switchTab('kanban')">📅 看板</button>
+    <button class="nav-btn" id="kbTabBtn" onclick="switchTab('kanban')">📅 看板</button>
     <button class="nav-btn" onclick="switchTab('anniversaries')">🎂 纪念日</button>
   </nav>
 
-  <!-- 新建按钮 -->
-  <button class="fab" onclick="openTaskEdit()">＋</button>
 </main>
+
+<!-- ==================== 全局 FAB ==================== -->
+<div class="fab-row"><button class="fab" onclick="fabClick()">＋</button></div>
 
 <!-- ==================== 任务编辑弹窗 ==================== -->
 <dialog id="taskDialog">
@@ -125,11 +126,10 @@
 
   <nav class="bottom-nav">
     <button class="nav-btn" onclick="switchTab('tasks')">📋 任务</button>
-    <button class="nav-btn" onclick="switchTab('kanban')">📅 看板</button>
+    <button class="nav-btn" id="kbTabBtn" onclick="switchTab('kanban')">📅 看板</button>
     <button class="nav-btn active" onclick="switchTab('anniversaries')">🎂 纪念日</button>
   </nav>
 
-  <button class="fab" onclick="openAnniEdit()">＋</button>
 </main>
 
 <!-- ==================== 看板屏幕 ==================== -->

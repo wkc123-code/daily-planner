@@ -541,10 +541,17 @@ async function loadKanbanPreview(dateStr) {
   $('#kbPreviewList').innerHTML = html;
 }
 
+let currentTab = 'tasks';
+function fabClick() {
+  if (currentTab === 'anniversaries') openAnniEdit();
+  else openTaskEdit();
+}
+
 function switchTab(tab){
+  currentTab = tab;
   $('#homeScreen').style.display='none'; $('#anniversaryScreen').style.display='none'; $('#kanbanScreen').style.display='none';
   if (tab === 'tasks') { $('#homeScreen').style.display=''; loadTasks(); }
-  else if (tab === 'kanban') { if (!kbYear) initKanban(); $('#kanbanScreen').style.display=''; renderKanban(); }
+  else if (tab === 'kanban') { if (!kbYear) initKanban(); $('#kanbanScreen').style.display='flex'; $('#kanbanScreen').style.flexDirection='column'; renderKanban(); }
   else { $('#anniversaryScreen').style.display=''; loadAnniversaries(); }
   document.querySelectorAll('.bottom-nav').forEach(nav => {
     const btns = nav.querySelectorAll('.nav-btn'); btns.forEach(b => b.classList.remove('active'));
