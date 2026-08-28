@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>记忆点 · 今日事</title>
+<link rel="stylesheet" href="style.css?v=229">
+</head>
+<body>
+<!-- 模拟手机状态栏（网页预览用；装机后真机状态栏会自动覆盖，App 内自动隐藏） -->
+<div class="sim-bar" id="simBar">
+  <span class="sim-time">9:41</span>
+  <span class="sim-island"></span>
+  <span class="sim-icons">📶 🔋</span>
+</div>
+<main id="app">
+  <!-- 顶部：陶土渐变头 -->
+  <header class="head">
+    <div class="head-row">
+      <div class="greet" id="greet"></div>
+    </div>
+    <div class="date-main" id="dateMain">
+      <div class="date-line1" id="dateBig"></div>
+      <div class="date-week" id="dateWeek"></div>
+    </div>
+  </header>
+
+  <!-- 分类胶囊：全部固定 + 右侧轮播 -->
+  <div class="cat-row" id="catRow"></div>
+
+  <!-- 遛狗进度 -->
+  <div class="walk">
+    <div class="walk-track">
+      <div class="walk-fill" id="fill"></div>
+      <span class="walk-pet" id="walkPet"></span>
+    </div>
+    <span class="walk-txt" id="walkTxt"></span>
+  </div>
+
+  <!-- 任务列表 -->
+  <div class="body" id="taskList"></div>
+
+</main>
+
+<!-- ============ 回头看屏幕（v3 复刻，陶土配色） ============ -->
+<main id="kanbanScreen" style="display:none">
+  <header class="head kb-head">
+    <div class="head-row">
+      <div class="greet" id="kbGreet"></div>
+    </div>
+    <div class="kb-midrow">
+      <div class="kb-top-title">日历</div>
+      <span class="kb-stats-link" onclick="openStats()">统计 ›</span>
+    </div>
+    <div class="kb-head-subrow">
+      <div class="kb-month-title" id="kbMonthTitle"></div>
+      <div class="kb-head-sub">看看数据吧</div>
+    </div>
+  </header>
+  <div class="kb-card">
+    <div class="kb-calendar-wrap" id="kbCalendarWrap">
+      <div class="kb-weekdays"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+      <div class="kb-grid" id="kbGrid"></div>
+    </div>
+    <div class="kb-progress" id="kbProgress"></div>
+    <div class="kb-handle" id="kbHandle" onclick="toggleCalendar()">
+      <span class="kb-handle-bar"></span>
+    </div>
+  </div>
+  <div class="kb-task-list" id="kbTaskList"><div class="kb-scrollbar" id="kbScrollbar"></div></div>
+</main>
+
+<!-- ============ 统计屏幕（从右侧滑入） ============ -->
+<main id="statsScreen" style="display:none">
+  <header class="head stats-head">
+    <div class="stats-head-left">
+      <span class="stats-back" onclick="closeStats()">‹</span>
+      <span class="stats-title">统计</span>
+    </div>
+  </header>
+  <div class="stats-body" id="statsBody"></div>
+</main>
+
+<!-- 全局底部导航（中间猫脸添加入口，v3 方式） -->
+<nav class="nav">
+  <button class="active" data-view="today" onclick="switchView('today')"><span class="tab-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="m9 11 2 2 4-4"/></svg></span>今日事</button>
+  <button data-view="kanban" onclick="switchView('kanban')"><span class="tab-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span>回头看</button>
+  <span class="nav-fab-wrap"><button class="nav-fab" onclick="onFabClick()" aria-label="添加任务">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+  </button></span>
+  <button data-view="anniversary" onclick="switchView('anniversary')"><span class="tab-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7Z"/></svg></span>勿相忘</button>
+  <button><span class="tab-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.4 2.6a2.1 2.1 0 1 1 3 3L12 15l-4 1 1-4Z"/></svg></span>随手记</button>
+</nav>
+
+<!-- 回到今天（悬浮胶囊，仅非今天时显示，今日事/回头看共用） -->
+<button id="backTodayBtn" class="back-today" style="display:none" onclick="goBackToday()">今天</button>
+
+<!-- 任务编辑弹窗 -->
+<div class="overlay" id="overlay" style="display:none" onclick="if(event.target===this)closeSheet()">
+  <div class="sheet">
+    <div class="sheet-head">
+      <span class="sheet-title" id="sheetTitle">新任务</span>
+    </div>
+    <input type="text" id="tTitle" placeholder="要干点啥？" autocomplete="off">
+    <textarea id="tDesc" rows="1" placeholder="备注（可选）"></textarea>
+    <div class="seg" id="priSeg">
+      <button class="seg-btn" data-v="2" onclick="pickPri(this)">🔴 高</button>
+      <button class="seg-btn active" data-v="1" onclick="pickPri(this)">🟠 中</button>
+      <button class="seg-btn" data-v="0" onclick="pickPri(this)">🟢 低</button>
+    </div>
+    <div class="seg" id="repSeg">
+      <button class="seg-btn active" data-v="none" onclick="pickRep(this)">不重复</button>
+      <button class="seg-btn" data-v="weekdays" onclick="pickRep(this)">工作日</button>
+      <button class="seg-btn" data-v="daily" onclick="pickRep(this)">每天</button>
+      <button class="seg-btn" data-v="weekly" onclick="pickRep(this)">每周</button>
+    </div>
+    <div class="reminder-row">
+      <div class="time-picker">
+        <div class="tp-col" id="tpHour"><div class="tp-list"></div></div>
+        <span class="tp-sep">:</span>
+        <div class="tp-col" id="tpMin"><div class="tp-list"></div></div>
+      </div>
+      <span class="rm-sep">提前</span>
+      <div class="offset-stepper">
+        <button type="button" class="offset-arrow" onclick="stepOffset(-1)">▲</button>
+        <span class="offset-val" id="offsetVal">3</span>
+        <button type="button" class="offset-arrow" onclick="stepOffset(1)">▼</button>
+      </div>
+      <span class="rm-sep">分钟</span>
+      <label class="toggle-label">
+        <input type="checkbox" id="tRemind">
+        <span class="toggle-switch"></span>
+      </label>
+    </div>
+    <div class="dialog-actions">
+      <button class="btn-cancel" onclick="closeSheet()">取消</button>
+      <button class="btn-save" onclick="saveTask()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 推迟任务：简易月历选择日期 -->
+<div class="postpone-overlay" id="postponeOverlay" style="display:none">
+  <div class="postpone-card">
+    <div class="postpone-head">
+      <button class="pos-month-btn" onclick="postponeMonth(-1)" aria-label="上个月">‹</button>
+      <span class="postpone-title" id="postponeTitle"></span>
+      <button class="pos-month-btn" onclick="postponeMonth(1)" aria-label="下个月">›</button>
+    </div>
+    <div class="pos-weekdays"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+    <div class="postpone-grid" id="postponeGrid"></div>
+    <div class="dialog-actions">
+      <button class="btn-cancel" onclick="closePostpone()">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 分类编辑弹窗（v3 居中卡片） -->
+<dialog id="catEditDialog" class="center-dialog">
+  <form id="catEditForm" method="dialog">
+    <h3 id="catEditTitle">编辑分类</h3>
+    <div class="name-row">
+      <input type="text" id="catEditName" placeholder="分类名称" autocomplete="off">
+      <button type="button" class="icon-box" id="iconBox" onclick="toggleIconLib()">🐾</button>
+    </div>
+    <div class="icon-lib" id="iconLib" style="display:none"></div>
+    <div class="dialog-actions">
+      <button type="button" onclick="closeCatEdit()" class="btn-cancel">取消</button>
+      <button type="submit" class="btn-save">确定</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- 便捷菜单（长按"全部"弹出，渐入渐出） -->
+<div class="quick-menu" id="quickMenu">
+  <div class="quick-menu-card">
+    <button class="quick-menu-btn" onclick="quickAddCat()">＋ 添加分类</button>
+    <button class="quick-menu-cancel" onclick="closeQuickMenu()">取消</button>
+  </div>
+</div>
+
+<div id="toast"><span id="toastMsg"></span><button class="toast-undo" id="toastUndo" style="display:none" onclick="undoDelete()">撤销</button></div>
+
+<!-- 日期选择日历（长按今日事日期弹出，底部 Sheet） -->
+<div class="date-overlay" id="dateOverlay" style="display:none" onclick="if(event.target===this)closeDatePicker()">
+  <div class="date-sheet" id="dateSheet">
+    <div class="date-sheet-grip"></div>
+    <div class="date-sheet-head">
+      <div class="date-sheet-titlewrap">
+        <button class="date-month-btn" id="datePrevBtn" onclick="datePickerMonth(-1)" aria-label="上个月">‹</button>
+        <span class="date-sheet-title" id="datePickerTitle"></span>
+        <button class="date-month-btn" id="dateNextBtn" onclick="datePickerMonth(1)" aria-label="下个月">›</button>
+      </div>
+    </div>
+    <div class="date-sheet-weekdays"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+    <div class="date-sheet-grid" id="datePickerGrid"></div>
+  </div>
+</div>
+
+<!-- 分类操作弹窗（双击分类触发，陶土风） -->
+<div class="cat-dialog" id="catDialog" style="display:none">
+  <div class="cat-dialog-card">
+    <div class="cat-dialog-title" id="catDTitle">分组操作</div>
+    <div class="cat-dialog-btns">
+      <button onclick="catActionEdit()">✏️ 编辑</button>
+      <button class="del" onclick="catActionDel()">🗑 删除</button>
+    </div>
+    <button class="cat-dialog-cancel" onclick="closeCatDialog()">取消</button>
+  </div>
+</div>
+<!-- ============ 勿相忘屏幕（v3 复刻 · 基础框架） ============ -->
+<main id="anniversaryScreen" style="display:none">
+  <header class="top-bar">
+    <div class="top-bar-title"><span class="top-sub">记住，就是存在</span></div>
+    <div class="anni-pill">
+      <div class="pill-indicator"></div>
+      <input type="radio" name="anniTab" id="anniTabAnn" data-tab="anniversary" checked>
+      <label for="anniTabAnn">纪念日</label>
+      <input type="radio" name="anniTab" id="anniTabCountdown" data-tab="countdown">
+      <label for="anniTabCountdown">倒计时</label>
+    </div>
+  </header>
+  <div class="anni-grid" id="anniGrid"></div>
+</main>
+
+<!-- 勿相忘编辑弹窗 -->
+<div class="anni-modal-overlay" id="anniModalOverlay" style="display:none">
+  <div class="anni-modal-sheet" id="anniModalSheet">
+    <div class="anni-modal-title" id="anniModalTitle">编辑事件</div>
+    <div class="anni-edit-card anni-edit-name-card">
+      <div class="anni-edit-name-row">
+        <input type="text" id="anniEditName" placeholder="事件名称" class="anni-name-input">
+        <button type="button" class="anni-color-trigger" id="anniColorTrigger" aria-label="选择纪念日底色"></button>
+      </div>
+      <div class="anni-color-dropdown" id="anniColorPicker"></div>
+    </div>
+    <div class="anni-edit-card">
+      <div class="anni-wheel-picker" id="anniWheelPicker">
+        <div class="anni-wheel-col" data-type="year"><div class="anni-wheel-items" id="yearList"></div></div>
+        <div class="anni-wheel-col" data-type="month"><div class="anni-wheel-items" id="monthList"></div></div>
+        <div class="anni-wheel-col" data-type="day"><div class="anni-wheel-items" id="dayList"></div></div>
+      </div>
+    </div>
+    <div class="anni-edit-card">
+      <div class="anni-edit-row" style="border:none;padding-bottom:8px">
+        <span class="anni-edit-label">倒计时提醒</span>
+      </div>
+      <div class="anni-reminder-options" id="anniReminderOptions">
+        <button type="button" class="anni-reminder-opt" data-reminder="1">提前1天</button>
+        <button type="button" class="anni-reminder-opt" data-reminder="3">提前3天</button>
+        <button type="button" class="anni-reminder-opt" data-reminder="7">提前1周</button>
+      </div>
+    </div>
+    <div class="anni-modal-actions">
+      <button type="button" class="anni-btn-cancel" id="anniCancelBtn">取消</button>
+      <button type="button" class="anni-btn-save" id="anniSaveBtn">保存</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="anniImageInput" accept="image/*" style="display:none">
+
+<script src="gsap.min.js"></script>
+<script src="app.js?v=229"></script>
+</body>
+</html>
